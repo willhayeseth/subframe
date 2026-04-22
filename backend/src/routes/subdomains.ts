@@ -16,6 +16,21 @@ import { pushRegistryUpdate } from "../lib/github";
 
 const router = Router();
 
+// Called after every ENS registration completes (step 4).
+// Updates GitHub registry and regenerates the parent subframe.eth IPFS page + ENS contenthash.
+async function afterRegistrationComplete(name: string): Promise<void> {
+  pushRegistryUpdate(name).catch(() => void 0);
+  try {
+    const cid = await uploadParentAppToIPFS();
+    if (cid) {
+      const tx = await setParentContenthash(cid);
+      if (tx) console.log(`[PARENT-ENS] Updated subframe.eth contenthash: ${tx} (CID: ${cid})`);
+    }
+  } catch (err) {
+    console.error("[PARENT-ENS] Failed to update parent contenthash (non-fatal):", err);
+  }
+}
+
 router.get("/subdomains", async (req, res) => {
   try {
     const subdomains = await db
@@ -114,8 +129,7 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
             } else {
               // Step 4: ownership transferred to user — now officially linked
               await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.id, subdomain.id));
-              // Push updated registry.json to GitHub (non-blocking)
-              pushRegistryUpdate(cleanName).catch(() => void 0);
+              afterRegistrationComplete(cleanName).catch(() => void 0);
             }
           });
           if (ens) {
@@ -423,7 +437,7 @@ router.post("/subdomains/:name/retry-ens", async (req, res) => {
             await db.update(subdomainsTable).set({ ensTx3Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
           } else {
             await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
-            pushRegistryUpdate(name).catch(() => void 0);
+            afterRegistrationComplete(name).catch(() => void 0);
           }
         }, resumeFrom);
         if (ens) {
@@ -461,7 +475,7 @@ router.post("/subdomains/:name/set-ens-step", async (req, res) => {
       await db.update(subdomainsTable).set({ ensTx3Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
     } else {
       await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
-      pushRegistryUpdate(name).catch(() => void 0);
+      afterRegistrationComplete(name).catch(() => void 0);
     }
     req.log.info(`[SET-ENS-STEP] ${name} step ${step}: ${txHash}`);
     res.json({ ok: true, name, step, txHash });

@@ -721,13 +721,13 @@ export default function Profile() {
                   <div className="flex flex-wrap gap-3">
                     {subdomain.status === "linked" ? (
                       <a
-                        href={`https://${subdomain.ensFullName}.limo`}
+                        href={`https://subframe.eth.limo/${subdomain.name}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#CBFF4D] hover:text-[#CBFF4D]/80 transition-colors"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
-                        {subdomain.ensFullName}.limo
+                        subframe.eth.limo/{subdomain.name}
                         <ArrowUpRight className="w-3 h-3" />
                       </a>
                     ) : (
@@ -1087,13 +1087,13 @@ export function StandaloneProfile() {
             {subdomain.ipfsCid && subdomain.status === "linked" && (
               <div className="flex flex-wrap gap-3">
                 <a
-                  href={`https://${subdomain.ensFullName}.limo`}
+                  href={`https://subframe.eth.limo/${subdomain.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#CBFF4D] hover:text-[#CBFF4D]/80 transition-colors"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
-                  {subdomain.ensFullName}.limo
+                  subframe.eth.limo/{subdomain.name}
                   <ArrowUpRight className="w-3 h-3" />
                 </a>
               </div>

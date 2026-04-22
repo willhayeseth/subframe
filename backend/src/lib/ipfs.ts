@@ -366,8 +366,6 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
     return null;
   }
 
-  const appUrl = APP_URL ?? "https://subframe.eth.limo";
-
   const indexHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -383,11 +381,15 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
     p { color:#ffffff40; font-size:12px; margin-top:12px; }
   </style>
   <script>
-    // Redirect to app while preserving path (e.g. /profile/test -> app/profile/test)
-    var base = "${appUrl}";
-    var path = window.location.pathname;
-    var search = window.location.search;
-    window.location.replace(base + path + search);
+    // Route /{name} -> subframe.network/profile/{name}, root -> subframe.network/
+    var parts = window.location.pathname.split('/').filter(Boolean);
+    var target = 'https://subframe.network';
+    if (parts.length === 1) {
+      target += '/profile/' + parts[0];
+    } else if (parts.length > 1) {
+      target += window.location.pathname;
+    }
+    window.location.replace(target + window.location.search);
   </script>
 </head>
 <body>

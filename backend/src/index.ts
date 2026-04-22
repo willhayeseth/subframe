@@ -2,8 +2,22 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { db, subdomainsTable } from "@workspace/db";
 import { eq, isNull } from "drizzle-orm";
-import { registerSubdomainOnChain } from "./lib/ens";
+import { registerSubdomainOnChain, setParentContenthash } from "./lib/ens";
 import { pushRegistryUpdate } from "./lib/github";
+import { uploadParentAppToIPFS } from "./lib/ipfs";
+
+async function afterRegistrationComplete(name: string): Promise<void> {
+  pushRegistryUpdate(name).catch(() => void 0);
+  try {
+    const cid = await uploadParentAppToIPFS();
+    if (cid) {
+      const tx = await setParentContenthash(cid);
+      if (tx) logger.info(`[PARENT-ENS] Updated subframe.eth contenthash: ${tx} (CID: ${cid})`);
+    }
+  } catch (err) {
+    logger.error({ err }, "[PARENT-ENS] Failed to update parent contenthash (non-fatal)");
+  }
+}
 
 const rawPort = process.env["PORT"];
 
@@ -57,7 +71,7 @@ app.listen(port, (err) => {
             await db.update(subdomainsTable).set({ ensTx3Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.id, sub.id));
           } else {
             await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.id, sub.id));
-            pushRegistryUpdate(sub.name).catch(() => void 0);
+            afterRegistrationComplete(sub.name).catch(() => void 0);
           }
         }, resumeFrom).then((res) => {
           if (res) {
