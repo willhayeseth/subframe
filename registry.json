@@ -1,5 +1,48 @@
 {
-  "updated": "2026-04-22T13:04:01.240Z",
-  "count": 0,
-  "members": []
+  "updated": "2026-04-22T18:56:50.690Z",
+  "count": 6,
+  "members": [
+    {
+      "name": "vitalik",
+      "ensFullName": "vitalik.subframe.eth",
+      "walletAddress": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "ipfsCid": null,
+      "linkedAt": "2026-04-21T09:03:23.721Z"
+    },
+    {
+      "name": "defiwhale",
+      "ensFullName": "defiwhale.subframe.eth",
+      "walletAddress": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+      "ipfsCid": null,
+      "linkedAt": "2026-04-21T09:03:23.721Z"
+    },
+    {
+      "name": "cryptoninja",
+      "ensFullName": "cryptoninja.subframe.eth",
+      "walletAddress": "0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8",
+      "ipfsCid": null,
+      "linkedAt": "2026-04-21T09:03:23.721Z"
+    },
+    {
+      "name": "test",
+      "ensFullName": "test.subframe.eth",
+      "walletAddress": "0xc684F09183D64089546130c11a248048Cc893290",
+      "ipfsCid": "bafybeigwumcskoti3hqh5httkorohfbzvvfowdyovg77g4yzt2b5rerp7u",
+      "linkedAt": "2026-04-22T10:55:52.739Z"
+    },
+    {
+      "name": "name",
+      "ensFullName": "name.subframe.eth",
+      "walletAddress": "0x4576e3Ae3Ae1a2224A72eA4Be61881f0aCb39086",
+      "ipfsCid": "bafybeigvs5sy57m23ya63opxfxt6vqayrc5t2whdkerrebqsexxeg2ji7i",
+      "linkedAt": "2026-04-22T11:08:47.872Z"
+    },
+    {
+      "name": "hayes",
+      "ensFullName": "hayes.subframe.eth",
+      "walletAddress": "0x5bD267d548b165e47C13e4E95A91a2354F96401b",
+      "ipfsCid": "bafybeignv3w6auyu6ez25ve7wjf77pmk4fmoryl4tf3ustpzeg6jhw66hy",
+      "linkedAt": "2026-04-22T18:56:49.885Z"
+    }
+  ]
 }
