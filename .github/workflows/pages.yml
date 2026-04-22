@@ -46,7 +46,7 @@ jobs:
         env:
           NODE_ENV: production
           BASE_PATH: /
-          VITE_API_BASE_URL: https://api.subframe.network
+          VITE_API_BASE_URL: https://subframedev.replit.app
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
 
       - name: Upload Pages artifact
