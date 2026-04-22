@@ -1,3 +1,4 @@
+import React from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
@@ -31,31 +32,33 @@ const isEnsDomain =
   typeof window !== "undefined" &&
   window.location.hostname.endsWith(".eth.limo");
 
+const withLayout = (Component: React.ComponentType<any>) =>
+  (props: any) => <Layout><Component {...props} /></Layout>;
+
 function Router() {
   if (isEnsDomain) {
     return (
       <Switch>
-        <Route path="/profile/:name" component={StandaloneProfile} />
+        <Route path="/:name" component={StandaloneProfile} />
         <Route component={NotFound} />
       </Switch>
     );
   }
 
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/claim" component={Claim} />
-        <Route path="/onboarding/:name" component={Onboarding} />
-        <Route path="/profile/:name" component={Profile} />
-        <Route path="/explore" component={Explore} />
-        <Route path="/analyze" component={Analyze} />
-        <Route path="/ens-identity" component={EnsIdentity} />
-        <Route path="/ai-analysis" component={AiAnalysis} />
-        <Route path="/ai-chat" component={AiChat} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/" component={withLayout(Home)} />
+      <Route path="/claim" component={withLayout(Claim)} />
+      <Route path="/onboarding/:name" component={withLayout(Onboarding)} />
+      <Route path="/profile/:name" component={withLayout(Profile)} />
+      <Route path="/explore" component={withLayout(Explore)} />
+      <Route path="/analyze" component={withLayout(Analyze)} />
+      <Route path="/ens-identity" component={withLayout(EnsIdentity)} />
+      <Route path="/ai-analysis" component={withLayout(AiAnalysis)} />
+      <Route path="/ai-chat" component={withLayout(AiChat)} />
+      <Route path="/:name" component={StandaloneProfile} />
+      <Route component={withLayout(NotFound)} />
+    </Switch>
   );
 }
 

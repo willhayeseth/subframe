@@ -359,7 +359,7 @@ export function limoUrl(ensFullName: string): string {
 
 /* Upload a redirect SPA for subframe.eth (parent domain).
    Creates a directory with index.html + _redirects so that
-   subframe.eth.limo/profile/test routes correctly to the app. */
+   subframe.eth.limo/{name} routes correctly to subframe.network/{name}. */
 export async function uploadParentAppToIPFS(): Promise<string | null> {
   if (!PINATA_JWT) {
     console.warn("PINATA_JWT not set, skipping parent IPFS upload");
@@ -381,14 +381,8 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
     p { color:#ffffff40; font-size:12px; margin-top:12px; }
   </style>
   <script>
-    // Route /{name} -> subframe.network/profile/{name}, root -> subframe.network/
-    var parts = window.location.pathname.split('/').filter(Boolean);
-    var target = 'https://subframe.network';
-    if (parts.length === 1) {
-      target += '/profile/' + parts[0];
-    } else if (parts.length > 1) {
-      target += window.location.pathname;
-    }
+    // Route /{name} -> subframe.network/{name}, root -> subframe.network/
+    var target = 'https://subframe.network' + window.location.pathname;
     window.location.replace(target + window.location.search);
   </script>
 </head>
