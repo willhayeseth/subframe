@@ -716,7 +716,7 @@ export default function Profile() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
                 className="shrink-0 flex flex-col"
-                style={{ height: "calc(100vh - 460px)", minHeight: "380px" }}
+                style={{ height: "calc(100vh - 350px)", minHeight: "480px" }}
               >
                 <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider shrink-0">
                   <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
