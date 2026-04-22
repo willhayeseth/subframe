@@ -256,7 +256,7 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
   const allMsgs = messages ?? [];
 
   return (
-    <div className="flex flex-col rounded-2xl border border-white/[0.06] bg-[#0e0e0e] overflow-hidden" style={{ height: "360px" }}>
+    <div className="flex flex-col rounded-2xl border border-white/[0.06] bg-[#0e0e0e] overflow-hidden h-full">
       <div className="px-4 py-3 border-b border-white/[0.05] flex items-center gap-2.5 bg-white/[0.02]">
         <div className="w-7 h-7 rounded-lg bg-[#CBFF4D]/10 border border-[#CBFF4D]/15 flex items-center justify-center">
           <Bot className="w-4 h-4 text-[#CBFF4D]" />
@@ -702,7 +702,7 @@ export default function Profile() {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex-1 min-h-0"
+              className="shrink-0 h-[260px]"
             >
               <SubframeNetworkMap
                 subdomains={allSubdomains ?? []}
@@ -715,13 +715,15 @@ export default function Profile() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="shrink-0"
+                className="flex-1 min-h-0 flex flex-col"
               >
-                <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider shrink-0">
                   <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
                   AI Chat
                 </h2>
-                <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
+                <div className="flex-1 min-h-0">
+                  <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
+                </div>
               </motion.div>
             )}
           </div>
