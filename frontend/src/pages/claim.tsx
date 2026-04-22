@@ -7,6 +7,7 @@ import {
   useCheckSubdomainAvailability,
   useCreateSubdomain,
   getCheckSubdomainAvailabilityQueryKey,
+  getBaseUrl,
 } from "@workspace/api-client-react";
 
 export default function Claim() {
@@ -78,7 +79,7 @@ export default function Claim() {
         reader.readAsDataURL(file);
       });
 
-      const res = await fetch("/api/upload/avatar", {
+      const res = await fetch(`${getBaseUrl()}/api/upload/avatar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64, mimeType: file.type }),

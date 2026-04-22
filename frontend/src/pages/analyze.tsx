@@ -10,6 +10,7 @@ import {
   getGetWalletDataQueryKey,
   getAnalyzeWalletQueryKey,
   getListOpenaiMessagesQueryKey,
+  getBaseUrl,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { WalletAnalysis, WalletData } from "@workspace/api-client-react";
@@ -154,7 +155,7 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
     await qc.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(cId) });
     setStreaming(true); setStreamContent("");
     try {
-      const res = await fetch(`/api/openai/conversations/${cId}/messages`, {
+      const res = await fetch(`${getBaseUrl()}/api/openai/conversations/${cId}/messages`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, walletContext: getCtx() }),
       });
