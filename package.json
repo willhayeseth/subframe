@@ -1,0 +1,16 @@
+{
+  "name": "subframe",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter @workspace/subframe run dev",
+    "dev:backend": "pnpm --filter @workspace/api-server run dev",
+    "build": "pnpm -r --if-present run build",
+    "typecheck": "pnpm -r --if-present run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2",
+    "prettier": "^3.8.1"
+  }
+}

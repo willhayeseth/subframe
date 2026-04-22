@@ -1,0 +1,634 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Subframe Protocol API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: subdomains
+    description: ENS subdomain operations
+  - name: wallets
+    description: Wallet & ENS data operations
+  - name: openai
+    description: OpenAI AI chat and analysis operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /subdomains:
+    get:
+      operationId: listSubdomains
+      tags: [subdomains]
+      summary: List all registered subdomains
+      responses:
+        "200":
+          description: List of registered subdomains
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subdomain"
+    post:
+      operationId: createSubdomain
+      tags: [subdomains]
+      summary: Register a new subdomain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubdomainBody"
+      responses:
+        "201":
+          description: Created subdomain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subdomain"
+        "409":
+          description: Name already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /subdomains/stats:
+    get:
+      operationId: getSubdomainStats
+      tags: [subdomains]
+      summary: Get protocol-wide stats
+      responses:
+        "200":
+          description: Protocol stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtocolStats"
+
+  /subdomains/check/{name}:
+    get:
+      operationId: checkSubdomainAvailability
+      tags: [subdomains]
+      summary: Check if a subdomain name is available
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResult"
+
+  /subdomains/{id}:
+    get:
+      operationId: getSubdomain
+      tags: [subdomains]
+      summary: Get a subdomain by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subdomain details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subdomain"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: updateSubdomain
+      tags: [subdomains]
+      summary: Update a subdomain (IPFS CID, avatar, bio)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubdomainBody"
+      responses:
+        "200":
+          description: Updated subdomain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subdomain"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /subdomains/by-name/{name}:
+    get:
+      operationId: getSubdomainByName
+      tags: [subdomains]
+      summary: Get subdomain by ENS name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Subdomain details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subdomain"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /wallets/{address}:
+    get:
+      operationId: getWalletData
+      tags: [wallets]
+      summary: Get wallet on-chain data including last 3 transactions
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Wallet data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletData"
+        "400":
+          description: Invalid address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /wallets/{address}/analyze:
+    get:
+      operationId: analyzeWallet
+      tags: [wallets]
+      summary: Get AI analysis of a wallet's on-chain activity
+      parameters:
+        - name: address
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: AI analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletAnalysis"
+
+  /openai/conversations:
+    get:
+      operationId: listOpenaiConversations
+      tags: [openai]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiConversation"
+    post:
+      operationId: createOpenaiConversation
+      tags: [openai]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpenaiConversationBody"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversation"
+
+  /openai/conversations/{id}:
+    get:
+      operationId: getOpenaiConversation
+      tags: [openai]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: deleteOpenaiConversation
+      tags: [openai]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+
+  /openai/conversations/{id}/messages:
+    get:
+      operationId: listOpenaiMessages
+      tags: [openai]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiMessage"
+    post:
+      operationId: sendOpenaiMessage
+      tags: [openai]
+      summary: Send a text message and receive a streaming text response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOpenaiMessageBody"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Subdomain:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        walletAddress:
+          type: string
+        ensFullName:
+          type: string
+        ipfsCid:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, active, linked]
+        claimedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - walletAddress
+        - ensFullName
+        - ipfsCid
+        - avatarUrl
+        - bio
+        - status
+        - claimedAt
+        - updatedAt
+
+    CreateSubdomainBody:
+      type: object
+      properties:
+        name:
+          type: string
+        walletAddress:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+      required:
+        - name
+        - walletAddress
+
+    UpdateSubdomainBody:
+      type: object
+      properties:
+        ipfsCid:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, linked]
+
+    AvailabilityResult:
+      type: object
+      properties:
+        available:
+          type: boolean
+        name:
+          type: string
+      required:
+        - available
+        - name
+
+    ProtocolStats:
+      type: object
+      properties:
+        totalSubdomains:
+          type: integer
+        activeSubdomains:
+          type: integer
+        linkedToIPFS:
+          type: integer
+        recentClaims:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subdomain"
+      required:
+        - totalSubdomains
+        - activeSubdomains
+        - linkedToIPFS
+        - recentClaims
+
+    Transaction:
+      type: object
+      properties:
+        hash:
+          type: string
+        from:
+          type: string
+        to:
+          type: ["string", "null"]
+        value:
+          type: string
+        valueEth:
+          type: string
+        gasUsed:
+          type: string
+        timestamp:
+          type: integer
+        method:
+          type: ["string", "null"]
+        status:
+          type: string
+      required:
+        - hash
+        - from
+        - to
+        - value
+        - valueEth
+        - gasUsed
+        - timestamp
+        - method
+        - status
+
+    WalletData:
+      type: object
+      properties:
+        address:
+          type: string
+        ensName:
+          type: ["string", "null"]
+        balanceEth:
+          type: string
+        balanceUsd:
+          type: ["string", "null"]
+        txCount:
+          type: integer
+        lastTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        firstSeen:
+          type: ["string", "null"]
+        isContract:
+          type: boolean
+      required:
+        - address
+        - ensName
+        - balanceEth
+        - balanceUsd
+        - txCount
+        - lastTransactions
+        - firstSeen
+        - isContract
+
+    WalletAnalysis:
+      type: object
+      properties:
+        address:
+          type: string
+        summary:
+          type: string
+        activityType:
+          type: string
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+        tags:
+          type: array
+          items:
+            type: string
+        insights:
+          type: array
+          items:
+            type: string
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - address
+        - summary
+        - activityType
+        - riskLevel
+        - tags
+        - insights
+        - generatedAt
+
+    OpenaiConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+
+    OpenaiMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+
+    CreateOpenaiConversationBody:
+      type: object
+      properties:
+        title:
+          type: string
+      required:
+        - title
+
+    SendOpenaiMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+        walletContext:
+          type: string
+      required:
+        - content
+
+    OpenaiConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenaiMessage"
+      required:
+        - id
+        - title
+        - createdAt
+        - messages
+
+    OpenaiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
