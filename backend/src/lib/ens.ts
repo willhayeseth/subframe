@@ -2,10 +2,13 @@ import {
   createWalletClient,
   createPublicClient,
   http,
+  fallback,
   namehash,
   keccak256,
   toBytes,
+  encodeFunctionData,
   type Address,
+  type Abi,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
@@ -16,6 +19,61 @@ const NAME_WRAPPER = "0xD4416b431e1a1A3893e2E4b9F26B5A4b57B35B0C" as Address;
 const PUBLIC_RESOLVER = "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63" as Address;
 const PARENT_NODE = namehash("subframe.eth");
 const DEFAULT_RPC = "https://eth.drpc.org";
+const BACKUP_RPCS = [
+  "https://eth.drpc.org",
+  "https://ethereum.publicnode.com",
+  "https://rpc.ankr.com/eth",
+  "https://1rpc.io/eth",
+];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function multiBroadcast(
+  walletClient: ReturnType<typeof createWalletClient>,
+  account: ReturnType<typeof privateKeyToAccount>,
+  txRequest: { to: Address; data: `0x${string}` },
+  backupRpcs: string[]
+): Promise<`0x${string}`> {
+  const prepared = await walletClient.prepareTransactionRequest({
+    account,
+    to: txRequest.to,
+    data: txRequest.data,
+    chain: mainnet,
+  });
+  const signedTx = await walletClient.signTransaction({ ...prepared, chain: mainnet });
+  const results = await Promise.allSettled(
+    backupRpcs.map((rpc) =>
+      fetch(rpc, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "eth_sendRawTransaction",
+          params: [signedTx],
+          id: 1,
+        }),
+      })
+        .then((r) => r.json())
+        .then((data: { result?: string; error?: { message: string } }) => {
+          if (data.error) throw new Error(data.error.message);
+          return data.result as `0x${string}`;
+        })
+    )
+  );
+
+  let txHash: `0x${string}` | undefined;
+  for (const r of results) {
+    if (r.status === "fulfilled" && r.value) {
+      if (!txHash) txHash = r.value;
+      console.log(`[ENS] broadcast OK via one provider`);
+    }
+  }
+  if (!txHash) {
+    const errors = results.map((r) => (r.status === "rejected" ? r.reason : "already known")).join("; ");
+    throw new Error(`All RPC broadcasts failed: ${errors}`);
+  }
+  return txHash;
+}
 
 const NAME_WRAPPER_ABI = [
   {
@@ -288,9 +346,14 @@ export async function registerSubdomainOnChain(
     return null;
   }
 
-  const transport = http(rpcUrl);
-  const publicClient = createPublicClient({ chain: mainnet, transport });
-  const walletClient = createWalletClient({ account, chain: mainnet, transport });
+  const primaryTransport = http(rpcUrl);
+  const fallbackTransport = fallback(
+    [rpcUrl, ...BACKUP_RPCS.filter((r) => r !== rpcUrl)].map((r) => http(r))
+  );
+  const publicClient = createPublicClient({ chain: mainnet, transport: fallbackTransport });
+  const walletClient = createWalletClient({ account, chain: mainnet, transport: primaryTransport });
+
+  const broadcastRpcs = [rpcUrl, ...BACKUP_RPCS.filter((r) => r !== rpcUrl)];
 
   const subnameNode = namehash(`${name}.subframe.eth`);
   const contenthash = cidToContentHash(ipfsCid);
@@ -315,85 +378,87 @@ export async function registerSubdomainOnChain(
     console.log("[ENS] NameWrapper check failed, assuming unwrapped");
   }
 
-  let createTxHash: `0x${string}`;
+  const TX_TIMEOUT = 10 * 60 * 1000;
 
-  if (isWrapped) {
-    console.log(`[ENS] Step 1: NameWrapper.setSubnodeRecord(${name})`);
-    createTxHash = await walletClient.writeContract({
-      address: NAME_WRAPPER,
-      abi: NAME_WRAPPER_ABI,
-      functionName: "setSubnodeRecord",
-      args: [
-        PARENT_NODE,
-        name,
-        account.address,
-        PUBLIC_RESOLVER,
-        0n,
-        0,
-        BigInt("18446744073709551615"),
-      ],
-    });
-  } else {
-    console.log(`[ENS] Step 1: Registry.setSubnodeRecord(${name})`);
-    createTxHash = await walletClient.writeContract({
-      address: ENS_REGISTRY,
-      abi: REGISTRY_ABI,
-      functionName: "setSubnodeRecord",
-      args: [PARENT_NODE, labelHash, account.address, PUBLIC_RESOLVER, 0n],
-    });
-  }
+  console.log(`[ENS] Step 1: ${isWrapped ? "NameWrapper" : "Registry"}.setSubnodeRecord(${name})`);
+  const step1Data = isWrapped
+    ? encodeFunctionData({
+        abi: NAME_WRAPPER_ABI as Abi,
+        functionName: "setSubnodeRecord",
+        args: [PARENT_NODE, name, account.address, PUBLIC_RESOLVER, 0n, 0, BigInt("18446744073709551615")],
+      })
+    : encodeFunctionData({
+        abi: REGISTRY_ABI as Abi,
+        functionName: "setSubnodeRecord",
+        args: [PARENT_NODE, labelHash, account.address, PUBLIC_RESOLVER, 0n],
+      });
 
-  const TX_TIMEOUT = 10 * 60 * 1000; // 10 minutes — mainnet can be slow
-
+  const createTxHash = await multiBroadcast(
+    walletClient,
+    account,
+    { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step1Data },
+    broadcastRpcs
+  );
   console.log(`[ENS] Step 1 tx: ${createTxHash}, waiting...`);
   await publicClient.waitForTransactionReceipt({ hash: createTxHash, timeout: TX_TIMEOUT });
   console.log("[ENS] Step 1 confirmed");
   await onStep?.(1, createTxHash);
+  await sleep(3000);
 
   console.log("[ENS] Step 2: setContenthash");
-  const contentTxHash = await walletClient.writeContract({
-    address: PUBLIC_RESOLVER,
-    abi: RESOLVER_ABI,
+  const step2Data = encodeFunctionData({
+    abi: RESOLVER_ABI as Abi,
     functionName: "setContenthash",
     args: [subnameNode, contenthash],
   });
+  const contentTxHash = await multiBroadcast(
+    walletClient,
+    account,
+    { to: PUBLIC_RESOLVER, data: step2Data },
+    broadcastRpcs
+  );
   console.log(`[ENS] Step 2 tx: ${contentTxHash}, waiting...`);
   await publicClient.waitForTransactionReceipt({ hash: contentTxHash, timeout: TX_TIMEOUT });
   console.log("[ENS] Step 2 confirmed");
   await onStep?.(2, contentTxHash);
+  await sleep(3000);
 
   console.log("[ENS] Step 3: setAddr");
-  const addrTxHash = await walletClient.writeContract({
-    address: PUBLIC_RESOLVER,
-    abi: RESOLVER_ABI,
+  const step3Data = encodeFunctionData({
+    abi: RESOLVER_ABI as Abi,
     functionName: "setAddr",
     args: [subnameNode, userWallet as Address],
   });
+  const addrTxHash = await multiBroadcast(
+    walletClient,
+    account,
+    { to: PUBLIC_RESOLVER, data: step3Data },
+    broadcastRpcs
+  );
   console.log(`[ENS] Step 3 tx: ${addrTxHash}, waiting...`);
   await publicClient.waitForTransactionReceipt({ hash: addrTxHash, timeout: TX_TIMEOUT });
   console.log("[ENS] Step 3 confirmed");
   await onStep?.(3, addrTxHash);
+  await sleep(3000);
 
-  // Step 4: Transfer ownership of the subdomain to the user wallet
-  // After this, the user controls their own subdomain and can set it as primary ENS
-  let transferTxHash: `0x${string}`;
-  if (isWrapped) {
-    console.log("[ENS] Step 4: NameWrapper.safeTransferFrom (transfer to user)");
-    transferTxHash = await walletClient.writeContract({
-      address: NAME_WRAPPER,
-      abi: NAME_WRAPPER_ABI,
-      functionName: "safeTransferFrom",
-      args: [account.address, userWallet as Address, BigInt(subnameNode), 1n, "0x"],
-    });
-  } else {
-    console.log("[ENS] Step 4: Registry.setOwner (transfer to user)");
-    transferTxHash = await walletClient.writeContract({
-      address: ENS_REGISTRY,
-      abi: REGISTRY_ABI,
-      functionName: "setOwner",
-      args: [subnameNode, userWallet as Address],
-    });
-  }
+  console.log("[ENS] Step 4: transfer ownership to user");
+  const step4Data = isWrapped
+    ? encodeFunctionData({
+        abi: NAME_WRAPPER_ABI as Abi,
+        functionName: "safeTransferFrom",
+        args: [account.address, userWallet as Address, BigInt(subnameNode), 1n, "0x"],
+      })
+    : encodeFunctionData({
+        abi: REGISTRY_ABI as Abi,
+        functionName: "setOwner",
+        args: [subnameNode, userWallet as Address],
+      });
+  const transferTxHash = await multiBroadcast(
+    walletClient,
+    account,
+    { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step4Data },
+    broadcastRpcs
+  );
   console.log(`[ENS] Step 4 tx: ${transferTxHash}, waiting...`);
   await publicClient.waitForTransactionReceipt({ hash: transferTxHash, timeout: TX_TIMEOUT });
   console.log(`[ENS] Step 4 confirmed — ${name}.subframe.eth transferred to ${userWallet}`);
