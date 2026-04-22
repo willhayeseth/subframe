@@ -392,6 +392,49 @@ router.post("/subdomains/:name/refresh-ipfs", async (req, res) => {
   }
 });
 
+// POST /api/subdomains/:name/retry-ens
+// Re-triggers full ENS registration for a subdomain stuck in "active" state
+router.post("/subdomains/:name/retry-ens", async (req, res) => {
+  try {
+    const { name } = req.params;
+    const [sub] = await db.select().from(subdomainsTable).where(eq(subdomainsTable.name, name)).limit(1);
+    if (!sub) return void res.status(404).json({ error: "Subdomain not found" });
+    if (sub.status === "linked") return void res.status(200).json({ message: "Already linked", name });
+    if (!sub.ipfsCid) return void res.status(400).json({ error: "No IPFS CID, claim flow incomplete" });
+
+    res.status(202).json({ message: "ENS retry started", name });
+
+    (async () => {
+      console.log(`[RETRY-ENS] Starting ENS registration for ${name}.subframe.eth (wallet: ${sub.walletAddress})`);
+      try {
+        const ens = await registerSubdomainOnChain(name, sub.walletAddress, sub.ipfsCid!, async (step, txHash) => {
+          console.log(`[RETRY-ENS] Step ${step} confirmed: ${txHash}`);
+          if (step === 1) {
+            await db.update(subdomainsTable).set({ ensTx1Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+          } else if (step === 2) {
+            await db.update(subdomainsTable).set({ ensTx2Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+          } else if (step === 3) {
+            await db.update(subdomainsTable).set({ ensTx3Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+          } else {
+            await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+            pushRegistryUpdate(name).catch(() => void 0);
+          }
+        });
+        if (ens) {
+          console.log(`[RETRY-ENS] Done: ${name}.subframe.eth is live on-chain`);
+        } else {
+          console.error(`[RETRY-ENS] registerSubdomainOnChain returned null. Backend wallet may not control subframe.eth`);
+        }
+      } catch (err) {
+        console.error(`[RETRY-ENS] Failed:`, err);
+      }
+    })().catch((err) => console.error(`[RETRY-ENS] Outer error:`, err));
+  } catch (err) {
+    req.log.error({ err }, "Failed to start ENS retry");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 /* Admin: set contenthash on subframe.eth (parent domain).
    If `cid` is provided in the body, skip the IPFS upload step.
    Otherwise uploads a redirect SPA page to IPFS first.
