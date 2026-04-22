@@ -22,6 +22,20 @@
     <meta name="twitter:description" content="Claim your permanent name.subframe.eth ENS subdomain. AI-powered wallet analysis and on-chain identity." />
     <meta name="twitter:image" content="/logo-full-transparent.png" />
 
+    <script>
+      (function() {
+        var query = window.location.search;
+        if (query.indexOf('?p=') === 0 || query.indexOf('&p=') !== -1) {
+          var params = query.slice(1).split('&').reduce(function(p, s) {
+            var kv = s.split('='); p[kv[0]] = decodeURIComponent(kv.slice(1).join('=')); return p;
+          }, {});
+          if (params.p) {
+            var hash = params.hash ? '#' + decodeURIComponent(params.hash) : '';
+            window.history.replaceState(null, null, params.p + hash);
+          }
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
