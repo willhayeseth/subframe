@@ -366,31 +366,245 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
     return null;
   }
 
+  const API_BASE = "https://subframedev.replit.app";
+
   const indexHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Subframe Protocol</title>
-  <meta name="description" content="Claim your ENS subdomain on subframe.eth" />
+  <meta name="description" content="Web3 identity on subframe.eth" />
   <style>
-    body { margin:0; background:#0C0C0C; display:flex; align-items:center; justify-content:center; min-height:100vh; font-family:monospace; }
-    .wrap { text-align:center; }
-    .dot { width:10px; height:10px; border-radius:50%; background:#CBFF4D; display:inline-block; animation:pulse 1.2s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1)} }
-    p { color:#ffffff40; font-size:12px; margin-top:12px; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0C0C0C;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+    .loader{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px}
+    .dot{width:10px;height:10px;border-radius:50%;background:#CBFF4D;animation:pulse 1.2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+    .loader-text{color:#ffffff40;font-size:12px;font-family:monospace}
+    .error{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px}
+    .error-name{font-family:monospace;color:#CBFF4D60;font-size:14px}
+    .error-msg{color:#ffffff40;font-size:13px}
+    .brand-link{color:#ffffff15;font-size:11px;text-decoration:none;margin-top:8px}
+    .brand-link:hover{color:#CBFF4D50}
+    .page{max-width:640px;margin:0 auto;padding:32px 16px;display:flex;flex-direction:column;gap:20px}
+    .card{background:#0e0e0e;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;position:relative}
+    .card-top-line{position:absolute;inset-x:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(203,255,77,.25),transparent)}
+    .card-body{padding:20px}
+    .profile-row{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+    .avatar-wrap{position:relative;flex-shrink:0}
+    .avatar-glow{position:absolute;inset:0;border-radius:12px;background:rgba(203,255,77,.1);filter:blur(12px)}
+    .avatar{position:relative;width:64px;height:64px;border-radius:12px;background:#111;border:1px solid rgba(203,255,77,.2);overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(203,255,77,.12)}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .avatar-placeholder{font-size:28px}
+    .profile-info{flex:1;min-width:0}
+    .name-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+    .ens-name{font-size:22px;font-weight:900;font-family:monospace;color:#fff;word-break:break-all}
+    .badge{font-size:11px;padding:3px 12px;border-radius:99px;border:1px solid;font-family:monospace}
+    .badge-linked{color:#34d399;background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.2)}
+    .badge-pending{color:#fbbf24;background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.2)}
+    .badge-active{color:#22d3ee;background:rgba(34,211,238,.08);border-color:rgba(34,211,238,.2)}
+    .wallet-row{display:flex;align-items:center;gap:6px}
+    .wallet-addr{font-family:monospace;font-size:12px;color:rgba(255,255,255,.25)}
+    .wallet-actions{display:flex;align-items:center;gap:4px}
+    .icon-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.2);display:flex;align-items:center;padding:2px;border-radius:4px;transition:color .15s}
+    .icon-btn:hover{color:#CBFF4D}
+    .eth-balance{flex-shrink:0;text-align:right}
+    .eth-value{font-size:22px;font-weight:900;font-family:monospace;line-height:1}
+    .eth-label{font-size:11px;color:#CBFF4D;font-weight:700;margin-top:2px}
+    .eth-usd{font-size:11px;color:rgba(255,255,255,.25);margin-top:2px}
+    .bio{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:16px}
+    .ens-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#CBFF4D;text-decoration:none;transition:color .15s}
+    .ens-link:hover{color:rgba(203,255,77,.8)}
+    .pulse-dot{width:6px;height:6px;border-radius:50%;background:#CBFF4D;animation:pulse 1.5s ease-in-out infinite;flex-shrink:0}
+    .tx-count{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.05);font-size:11px;font-family:monospace;color:rgba(255,255,255,.25)}
+    .section-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+    .section-bar{width:4px;height:12px;border-radius:99px;background:rgba(203,255,77,.6);flex-shrink:0}
+    .tx-list{background:#0e0e0e;border:1px solid rgba(255,255,255,.06);border-radius:12px;overflow:hidden}
+    .tx-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:8px;transition:background .15s}
+    .tx-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.04)}
+    .tx-row:hover{background:rgba(255,255,255,.02)}
+    .tx-left{display:flex;align-items:center;gap:12px;min-width:0}
+    .tx-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .tx-dot-ok{background:#34d399}
+    .tx-dot-fail{background:#f87171}
+    .tx-hash{font-family:monospace;font-size:12px;color:rgba(255,255,255,.35)}
+    .tx-meta{font-size:11px;color:rgba(255,255,255,.2);margin-top:2px}
+    .tx-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .tx-method{font-size:11px;background:rgba(203,255,77,.08);color:rgba(203,255,77,.6);padding:2px 8px;border-radius:4px;font-family:monospace;border:1px solid rgba(203,255,77,.1)}
+    .tx-eth{font-family:monospace;font-size:12px;font-weight:700;white-space:nowrap}
+    .tx-eth span{color:#CBFF4D}
+    .ext-link{color:rgba(255,255,255,.15);text-decoration:none;display:flex}
+    .ext-link:hover{color:#CBFF4D}
+    .ai-card{border:1px solid rgba(203,255,77,.1);border-radius:12px;background:linear-gradient(180deg,rgba(203,255,77,.03),transparent);padding:20px;position:relative;overflow:hidden}
+    .ai-card-line{position:absolute;inset-x:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(203,255,77,.2),transparent)}
+    .ai-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .ai-icon{width:28px;height:28px;border-radius:8px;background:rgba(203,255,77,.1);border:1px solid rgba(203,255,77,.15);display:flex;align-items:center;justify-content:center;font-size:14px}
+    .ai-type{font-weight:600;color:rgba(255,255,255,.8);font-size:14px}
+    .risk-badge{font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid;font-family:monospace}
+    .risk-low{color:#34d399;background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.2)}
+    .risk-medium{color:#fbbf24;background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.2)}
+    .risk-high{color:#f87171;background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.2)}
+    .ai-summary{font-size:13px;color:rgba(255,255,255,.6);line-height:1.65;margin-bottom:16px}
+    .tags{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{font-size:11px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.06);font-family:monospace}
+    .footer{text-align:center;padding-bottom:24px}
+    .footer a{color:rgba(255,255,255,.12);font-size:11px;text-decoration:none}
+    .footer a:hover{color:rgba(203,255,77,.4)}
+    @media(max-width:480px){.ens-name{font-size:18px}.eth-value{font-size:18px}.tx-method{display:none}}
   </style>
-  <script>
-    // Route /{name} -> subframe.network/{name}, root -> subframe.network/
-    var target = 'https://subframe.network' + window.location.pathname;
-    window.location.replace(target + window.location.search);
-  </script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="dot"></div>
-    <p>Redirecting to Subframe Protocol...</p>
-  </div>
+  <div id="root"><div class="loader"><div class="dot"></div><p class="loader-text">Loading profile...</p></div></div>
+  <script>
+  (function(){
+    var API = '${API_BASE}';
+    var parts = window.location.pathname.split('/').filter(Boolean);
+    var name = parts[0] || '';
+
+    function esc(s){ return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+    function badge(status){
+      var cls = status === 'linked' ? 'badge-linked' : status === 'active' ? 'badge-active' : 'badge-pending';
+      return '<span class="badge ' + cls + '">' + esc(status) + '</span>';
+    }
+
+    function shortAddr(a){ return a.slice(0,10) + '...' + a.slice(-6); }
+
+    function renderTx(tx, last){
+      var border = last ? '' : '';
+      return '<div class="tx-row">' +
+        '<div class="tx-left">' +
+          '<div class="tx-dot ' + (tx.status === 'success' ? 'tx-dot-ok' : 'tx-dot-fail') + '"></div>' +
+          '<div>' +
+            '<div class="tx-hash">' + esc(tx.hash.slice(0,18)) + '...</div>' +
+            '<div class="tx-meta">' + esc(tx.from.slice(0,8)) + '... to ' + (tx.to ? esc(tx.to.slice(0,8)) + '...' : 'Contract') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="tx-right">' +
+          (tx.method ? '<span class="tx-method">' + esc(tx.method) + '</span>' : '') +
+          '<span class="tx-eth">' + esc(tx.valueEth) + ' <span>ETH</span></span>' +
+          '<a class="ext-link" href="https://etherscan.io/tx/' + esc(tx.hash) + '" target="_blank" rel="noopener">&#x2197;</a>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderProfile(sub, wallet, analysis){
+      var html = '<div class="page">';
+
+      // Profile card
+      html += '<div class="card"><div class="card-top-line"></div><div class="card-body">';
+      html += '<div class="profile-row">';
+      // Avatar
+      html += '<div class="avatar-wrap"><div class="avatar-glow"></div><div class="avatar">';
+      if(sub.avatarUrl) html += '<img src="' + esc(sub.avatarUrl) + '" alt="" />';
+      else html += '<span class="avatar-placeholder">&#9889;</span>';
+      html += '</div></div>';
+      // Info
+      html += '<div class="profile-info">';
+      html += '<div class="name-row"><span class="ens-name">' + esc(sub.ensFullName) + '</span>' + badge(sub.status) + '</div>';
+      html += '<div class="wallet-row">';
+      html += '<span class="wallet-addr">' + esc(shortAddr(sub.walletAddress)) + '</span>';
+      html += '<div class="wallet-actions">';
+      html += '<a class="icon-btn" href="https://etherscan.io/address/' + esc(sub.walletAddress) + '" target="_blank" rel="noopener" title="View on Etherscan">&#x2197;</a>';
+      html += '</div></div>';
+      html += '</div>';
+      // ETH balance
+      if(wallet){
+        html += '<div class="eth-balance"><div class="eth-value">' + esc(wallet.balanceEth) + '</div>';
+        html += '<div class="eth-label">ETH</div>';
+        if(wallet.balanceUsd) html += '<div class="eth-usd">$' + esc(wallet.balanceUsd) + '</div>';
+        html += '</div>';
+      }
+      html += '</div>'; // profile-row
+
+      if(sub.bio) html += '<p class="bio">' + esc(sub.bio) + '</p>';
+
+      if(sub.status === 'linked'){
+        html += '<a class="ens-link" href="https://subframe.eth.limo/' + esc(sub.name) + '" target="_blank" rel="noopener">';
+        html += '<span class="pulse-dot"></span>subframe.eth.limo/' + esc(sub.name) + ' &#x2197;</a>';
+      }
+
+      if(wallet && wallet.txCount != null){
+        html += '<div class="tx-count">' + Number(wallet.txCount).toLocaleString() + ' transactions</div>';
+      }
+      html += '</div></div>'; // card-body + card
+
+      // Recent transactions
+      if(wallet && wallet.lastTransactions && wallet.lastTransactions.length > 0){
+        html += '<div>';
+        html += '<div class="section-title"><div class="section-bar"></div>Recent Transactions</div>';
+        html += '<div class="tx-list">';
+        wallet.lastTransactions.forEach(function(tx, i){
+          html += renderTx(tx, i === wallet.lastTransactions.length - 1);
+        });
+        html += '</div></div>';
+      }
+
+      // AI Analysis
+      if(analysis){
+        var riskCls = analysis.riskLevel === 'low' ? 'risk-low' : analysis.riskLevel === 'high' ? 'risk-high' : 'risk-medium';
+        html += '<div>';
+        html += '<div class="section-title"><div class="section-bar"></div>AI Wallet Analysis</div>';
+        html += '<div class="ai-card"><div class="ai-card-line"></div>';
+        html += '<div class="ai-header">';
+        html += '<div style="display:flex;align-items:center;gap:8px"><div class="ai-icon">&#129504;</div><span class="ai-type">' + esc(analysis.activityType) + '</span></div>';
+        html += '<span class="risk-badge ' + riskCls + '">Risk: ' + esc(analysis.riskLevel) + '</span>';
+        html += '</div>';
+        if(analysis.summary) html += '<p class="ai-summary">' + esc(analysis.summary) + '</p>';
+        if(analysis.tags && analysis.tags.length){
+          html += '<div class="tags">';
+          analysis.tags.forEach(function(t){ html += '<span class="tag">' + esc(t) + '</span>'; });
+          html += '</div>';
+        }
+        html += '</div></div>';
+      }
+
+      html += '<div class="footer"><a href="https://subframe.network">Built on Subframe Protocol</a></div>';
+      html += '</div>'; // page
+      return html;
+    }
+
+    function showError(msg, namePart){
+      document.getElementById('root').innerHTML =
+        '<div class="error">' +
+        (namePart ? '<div class="error-name">' + esc(namePart) + '.subframe.eth</div>' : '') +
+        '<div class="error-msg">' + esc(msg) + '</div>' +
+        '<a class="brand-link" href="https://subframe.network">Built on Subframe Protocol</a>' +
+        '</div>';
+    }
+
+    async function load(){
+      if(!name){
+        showError('Visit hayes.subframe.eth.limo to view a profile.', '');
+        return;
+      }
+      try {
+        var r = await fetch(API + '/api/subdomains/by-name/' + encodeURIComponent(name));
+        if(!r.ok){ showError('Profile not found.', name); return; }
+        var sub = await r.json();
+
+        // Fetch wallet + analysis in parallel (non-blocking)
+        var wallet = null, analysis = null;
+        try {
+          var [wr, ar] = await Promise.all([
+            fetch(API + '/api/wallet/' + encodeURIComponent(sub.walletAddress)),
+            fetch(API + '/api/wallet/' + encodeURIComponent(sub.walletAddress) + '/analyze')
+          ]);
+          if(wr.ok) wallet = await wr.json();
+          if(ar.ok) analysis = await ar.json();
+        } catch(e){}
+
+        document.title = sub.ensFullName + ' - Subframe Protocol';
+        document.getElementById('root').innerHTML = renderProfile(sub, wallet, analysis);
+      } catch(e){
+        showError('Failed to load profile.', name);
+      }
+    }
+
+    load();
+  })();
+  </script>
 </body>
 </html>`;
 
