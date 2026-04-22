@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import OpenAI from "openai";
+const openai = new OpenAI({ apiKey: process.env["OPENAI_API_KEY"] });
 import { GetWalletDataParams, AnalyzeWalletParams } from "@workspace/api-zod";
 import { walletLimiter, aiLimiter } from "../lib/rateLimit";
 
