@@ -7,7 +7,8 @@
     "node_modules",
     "build",
     "dist",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "src/components/three-scene.tsx"
   ],
   "compilerOptions": {
     "noEmit": true,
@@ -27,9 +28,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "three": [
-        "../node_modules/three/src/Three.d.ts"
       ]
     }
   },
