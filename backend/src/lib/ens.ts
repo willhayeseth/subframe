@@ -348,13 +348,13 @@ export async function registerSubdomainOnChain(
   }
 
   const primaryTransport = http(rpcUrl);
-  // publicClient uses ONLY public RPCs for receipt polling — the authenticated dRPC URL
-  // has shown issues where it accepts TXes but doesn't return receipts reliably.
-  const publicTransport = fallback(BACKUP_RPCS.map((r) => http(r)));
+  // publicClient: rpcUrl first (Ankr premium if configured), then public fallbacks
+  const allRpcs = [rpcUrl, ...BACKUP_RPCS.filter((r) => r !== rpcUrl)];
+  const publicTransport = fallback(allRpcs.map((r) => http(r)));
   const publicClient = createPublicClient({ chain: mainnet, transport: publicTransport });
   const walletClient = createWalletClient({ account, chain: mainnet, transport: primaryTransport });
 
-  const broadcastRpcs = [rpcUrl, ...BACKUP_RPCS.filter((r) => r !== rpcUrl)];
+  const broadcastRpcs = allRpcs;
 
   const subnameNode = namehash(`${name}.subframe.eth`);
   const contenthash = cidToContentHash(ipfsCid);
