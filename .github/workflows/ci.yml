@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Build packages (required for project references)
+        run: |
+          pnpm exec tsc --build packages/db
+          pnpm exec tsc --build packages/api-zod
+          pnpm exec tsc --build packages/api-client-react
+
       - name: Type check all packages
         run: pnpm -r --if-present run typecheck
 
@@ -50,6 +56,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm exec tsc --build packages/db
+          pnpm exec tsc --build packages/api-zod
+          pnpm exec tsc --build packages/api-client-react
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -78,6 +90,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm exec tsc --build packages/db
+          pnpm exec tsc --build packages/api-zod
 
       - name: Build backend
         run: pnpm --filter @workspace/api-server run build
