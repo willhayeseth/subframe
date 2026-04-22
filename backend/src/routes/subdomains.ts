@@ -402,10 +402,16 @@ router.post("/subdomains/:name/retry-ens", async (req, res) => {
     if (sub.status === "linked") return void res.status(200).json({ message: "Already linked", name });
     if (!sub.ipfsCid) return void res.status(400).json({ error: "No IPFS CID, claim flow incomplete" });
 
-    res.status(202).json({ message: "ENS retry started", name });
+    // Determine which step to resume from based on what's already in DB
+    let resumeFrom: 1 | 2 | 3 | 4 = 1;
+    if (sub.ensTx3Hash) resumeFrom = 4;
+    else if (sub.ensTx2Hash) resumeFrom = 3;
+    else if (sub.ensTx1Hash) resumeFrom = 2;
+
+    res.status(202).json({ message: "ENS retry started", name, resumeFrom });
 
     (async () => {
-      console.log(`[RETRY-ENS] Starting ENS registration for ${name}.subframe.eth (wallet: ${sub.walletAddress})`);
+      console.log(`[RETRY-ENS] Starting ENS for ${name}.subframe.eth from step ${resumeFrom} (wallet: ${sub.walletAddress})`);
       try {
         const ens = await registerSubdomainOnChain(name, sub.walletAddress, sub.ipfsCid!, async (step, txHash) => {
           console.log(`[RETRY-ENS] Step ${step} confirmed: ${txHash}`);
@@ -419,7 +425,7 @@ router.post("/subdomains/:name/retry-ens", async (req, res) => {
             await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
             pushRegistryUpdate(name).catch(() => void 0);
           }
-        });
+        }, resumeFrom);
         if (ens) {
           console.log(`[RETRY-ENS] Done: ${name}.subframe.eth is live on-chain`);
         } else {
@@ -431,6 +437,36 @@ router.post("/subdomains/:name/retry-ens", async (req, res) => {
     })().catch((err) => console.error(`[RETRY-ENS] Outer error:`, err));
   } catch (err) {
     req.log.error({ err }, "Failed to start ENS retry");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/subdomains/:name/set-ens-step
+// Admin: manually record a confirmed on-chain ENS step (for recovery when backend job missed it)
+router.post("/subdomains/:name/set-ens-step", async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { step, txHash } = req.body as { step: number; txHash: string };
+    if (!step || !txHash || ![1, 2, 3, 4].includes(step)) {
+      return void res.status(400).json({ error: "step (1-4) and txHash required" });
+    }
+    const [sub] = await db.select().from(subdomainsTable).where(eq(subdomainsTable.name, name)).limit(1);
+    if (!sub) return void res.status(404).json({ error: "Subdomain not found" });
+
+    if (step === 1) {
+      await db.update(subdomainsTable).set({ ensTx1Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+    } else if (step === 2) {
+      await db.update(subdomainsTable).set({ ensTx2Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+    } else if (step === 3) {
+      await db.update(subdomainsTable).set({ ensTx3Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+    } else {
+      await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.name, name));
+      pushRegistryUpdate(name).catch(() => void 0);
+    }
+    req.log.info(`[SET-ENS-STEP] ${name} step ${step}: ${txHash}`);
+    res.json({ ok: true, name, step, txHash });
+  } catch (err) {
+    req.log.error({ err }, "Failed to set ENS step");
     res.status(500).json({ error: "Internal server error" });
   }
 });

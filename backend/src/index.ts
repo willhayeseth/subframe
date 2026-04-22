@@ -42,7 +42,11 @@ app.listen(port, (err) => {
       logger.info(`[STARTUP] Found ${pending.length} subdomain(s) with ENS pending. Retrying...`);
 
       for (const sub of pending) {
-        logger.info(`[STARTUP] Retrying ENS for ${sub.name}.subframe.eth`);
+        let resumeFrom: 1 | 2 | 3 | 4 = 1;
+        if (sub.ensTx3Hash) resumeFrom = 4;
+        else if (sub.ensTx2Hash) resumeFrom = 3;
+        else if (sub.ensTx1Hash) resumeFrom = 2;
+        logger.info(`[STARTUP] Retrying ENS for ${sub.name}.subframe.eth from step ${resumeFrom}`);
         registerSubdomainOnChain(sub.name, sub.walletAddress, sub.ipfsCid!, async (step, txHash) => {
           logger.info(`[STARTUP] ${sub.name} ENS step ${step}: ${txHash}`);
           if (step === 1) {
@@ -55,7 +59,7 @@ app.listen(port, (err) => {
             await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.id, sub.id));
             pushRegistryUpdate(sub.name).catch(() => void 0);
           }
-        }).then((res) => {
+        }, resumeFrom).then((res) => {
           if (res) {
             logger.info(`[STARTUP] ENS complete: ${sub.name}.subframe.eth`);
           } else {

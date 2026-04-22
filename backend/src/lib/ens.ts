@@ -314,7 +314,8 @@ export async function registerSubdomainOnChain(
   name: string,
   userWallet: string,
   ipfsCid: string,
-  onStep?: EnsStepCallback
+  onStep?: EnsStepCallback,
+  fromStep: 1 | 2 | 3 | 4 = 1
 ): Promise<{ txHash: string } | null> {
   const rawKey = process.env["ENS_PRIVATE_KEY"];
   if (!rawKey) {
@@ -347,10 +348,10 @@ export async function registerSubdomainOnChain(
   }
 
   const primaryTransport = http(rpcUrl);
-  const fallbackTransport = fallback(
-    [rpcUrl, ...BACKUP_RPCS.filter((r) => r !== rpcUrl)].map((r) => http(r))
-  );
-  const publicClient = createPublicClient({ chain: mainnet, transport: fallbackTransport });
+  // publicClient uses ONLY public RPCs for receipt polling — the authenticated dRPC URL
+  // has shown issues where it accepts TXes but doesn't return receipts reliably.
+  const publicTransport = fallback(BACKUP_RPCS.map((r) => http(r)));
+  const publicClient = createPublicClient({ chain: mainnet, transport: publicTransport });
   const walletClient = createWalletClient({ account, chain: mainnet, transport: primaryTransport });
 
   const broadcastRpcs = [rpcUrl, ...BACKUP_RPCS.filter((r) => r !== rpcUrl)];
@@ -379,67 +380,76 @@ export async function registerSubdomainOnChain(
   }
 
   const TX_TIMEOUT = 10 * 60 * 1000;
+  let firstTxHash: `0x${string}` | undefined;
 
-  console.log(`[ENS] Step 1: ${isWrapped ? "NameWrapper" : "Registry"}.setSubnodeRecord(${name})`);
-  const step1Data = isWrapped
-    ? encodeFunctionData({
-        abi: NAME_WRAPPER_ABI as Abi,
-        functionName: "setSubnodeRecord",
-        args: [PARENT_NODE, name, account.address, PUBLIC_RESOLVER, 0n, 0, BigInt("18446744073709551615")],
-      })
-    : encodeFunctionData({
-        abi: REGISTRY_ABI as Abi,
-        functionName: "setSubnodeRecord",
-        args: [PARENT_NODE, labelHash, account.address, PUBLIC_RESOLVER, 0n],
-      });
+  if (fromStep <= 1) {
+    console.log(`[ENS] Step 1: ${isWrapped ? "NameWrapper" : "Registry"}.setSubnodeRecord(${name})`);
+    const step1Data = isWrapped
+      ? encodeFunctionData({
+          abi: NAME_WRAPPER_ABI as Abi,
+          functionName: "setSubnodeRecord",
+          args: [PARENT_NODE, name, account.address, PUBLIC_RESOLVER, 0n, 0, BigInt("18446744073709551615")],
+        })
+      : encodeFunctionData({
+          abi: REGISTRY_ABI as Abi,
+          functionName: "setSubnodeRecord",
+          args: [PARENT_NODE, labelHash, account.address, PUBLIC_RESOLVER, 0n],
+        });
+    firstTxHash = await multiBroadcast(
+      walletClient, account,
+      { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step1Data },
+      broadcastRpcs
+    );
+    console.log(`[ENS] Step 1 tx: ${firstTxHash}, waiting...`);
+    await publicClient.waitForTransactionReceipt({ hash: firstTxHash, timeout: TX_TIMEOUT });
+    console.log("[ENS] Step 1 confirmed");
+    await onStep?.(1, firstTxHash);
+    await sleep(3000);
+  } else {
+    console.log(`[ENS] Skipping step 1 (fromStep=${fromStep})`);
+  }
 
-  const createTxHash = await multiBroadcast(
-    walletClient,
-    account,
-    { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step1Data },
-    broadcastRpcs
-  );
-  console.log(`[ENS] Step 1 tx: ${createTxHash}, waiting...`);
-  await publicClient.waitForTransactionReceipt({ hash: createTxHash, timeout: TX_TIMEOUT });
-  console.log("[ENS] Step 1 confirmed");
-  await onStep?.(1, createTxHash);
-  await sleep(3000);
+  if (fromStep <= 2) {
+    console.log("[ENS] Step 2: setContenthash");
+    const step2Data = encodeFunctionData({
+      abi: RESOLVER_ABI as Abi,
+      functionName: "setContenthash",
+      args: [subnameNode, contenthash],
+    });
+    const contentTxHash = await multiBroadcast(
+      walletClient, account,
+      { to: PUBLIC_RESOLVER, data: step2Data },
+      broadcastRpcs
+    );
+    console.log(`[ENS] Step 2 tx: ${contentTxHash}, waiting...`);
+    await publicClient.waitForTransactionReceipt({ hash: contentTxHash, timeout: TX_TIMEOUT });
+    console.log("[ENS] Step 2 confirmed");
+    await onStep?.(2, contentTxHash);
+    await sleep(3000);
+  } else {
+    console.log(`[ENS] Skipping step 2 (fromStep=${fromStep})`);
+  }
 
-  console.log("[ENS] Step 2: setContenthash");
-  const step2Data = encodeFunctionData({
-    abi: RESOLVER_ABI as Abi,
-    functionName: "setContenthash",
-    args: [subnameNode, contenthash],
-  });
-  const contentTxHash = await multiBroadcast(
-    walletClient,
-    account,
-    { to: PUBLIC_RESOLVER, data: step2Data },
-    broadcastRpcs
-  );
-  console.log(`[ENS] Step 2 tx: ${contentTxHash}, waiting...`);
-  await publicClient.waitForTransactionReceipt({ hash: contentTxHash, timeout: TX_TIMEOUT });
-  console.log("[ENS] Step 2 confirmed");
-  await onStep?.(2, contentTxHash);
-  await sleep(3000);
-
-  console.log("[ENS] Step 3: setAddr");
-  const step3Data = encodeFunctionData({
-    abi: RESOLVER_ABI as Abi,
-    functionName: "setAddr",
-    args: [subnameNode, userWallet as Address],
-  });
-  const addrTxHash = await multiBroadcast(
-    walletClient,
-    account,
-    { to: PUBLIC_RESOLVER, data: step3Data },
-    broadcastRpcs
-  );
-  console.log(`[ENS] Step 3 tx: ${addrTxHash}, waiting...`);
-  await publicClient.waitForTransactionReceipt({ hash: addrTxHash, timeout: TX_TIMEOUT });
-  console.log("[ENS] Step 3 confirmed");
-  await onStep?.(3, addrTxHash);
-  await sleep(3000);
+  if (fromStep <= 3) {
+    console.log("[ENS] Step 3: setAddr");
+    const step3Data = encodeFunctionData({
+      abi: RESOLVER_ABI as Abi,
+      functionName: "setAddr",
+      args: [subnameNode, userWallet as Address],
+    });
+    const addrTxHash = await multiBroadcast(
+      walletClient, account,
+      { to: PUBLIC_RESOLVER, data: step3Data },
+      broadcastRpcs
+    );
+    console.log(`[ENS] Step 3 tx: ${addrTxHash}, waiting...`);
+    await publicClient.waitForTransactionReceipt({ hash: addrTxHash, timeout: TX_TIMEOUT });
+    console.log("[ENS] Step 3 confirmed");
+    await onStep?.(3, addrTxHash);
+    await sleep(3000);
+  } else {
+    console.log(`[ENS] Skipping step 3 (fromStep=${fromStep})`);
+  }
 
   console.log("[ENS] Step 4: transfer ownership to user");
   const step4Data = isWrapped
@@ -454,8 +464,7 @@ export async function registerSubdomainOnChain(
         args: [subnameNode, userWallet as Address],
       });
   const transferTxHash = await multiBroadcast(
-    walletClient,
-    account,
+    walletClient, account,
     { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step4Data },
     broadcastRpcs
   );
@@ -464,7 +473,7 @@ export async function registerSubdomainOnChain(
   console.log(`[ENS] Step 4 confirmed — ${name}.subframe.eth transferred to ${userWallet}`);
   await onStep?.(4, transferTxHash);
 
-  return { txHash: createTxHash };
+  return { txHash: firstTxHash ?? transferTxHash };
 }
 
 const ENS_REGISTRY_ABI = [
