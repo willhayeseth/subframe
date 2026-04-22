@@ -11,6 +11,12 @@
     },
     {
       "path": "./packages/api-zod"
+    },
+    {
+      "path": "./backend"
+    },
+    {
+      "path": "./frontend"
     }
   ]
 }
