@@ -1,6 +1,7 @@
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { mainnet, sepolia } from "@reown/appkit/networks";
+import type { AppKitNetwork } from "@reown/appkit/networks";
 
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID as string;
 
@@ -8,7 +9,7 @@ if (!projectId) {
   console.error("VITE_REOWN_PROJECT_ID is not set");
 }
 
-export const networks = [mainnet, sepolia];
+export const networks = [mainnet, sepolia] as [AppKitNetwork, ...AppKitNetwork[]];
 
 export const wagmiAdapter = new WagmiAdapter({
   networks,
