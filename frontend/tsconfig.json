@@ -27,6 +27,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "three": [
+        "../node_modules/three/src/Three.d.ts"
       ]
     }
   },
