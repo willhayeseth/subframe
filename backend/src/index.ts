@@ -35,7 +35,7 @@ app.listen(port, (err) => {
         .from(subdomainsTable)
         .where(eq(subdomainsTable.status, "active"));
 
-      const pending = stuck.filter((s) => s.ipfsCid && !s.ensTx1Hash);
+      const pending = stuck.filter((s) => s.ipfsCid && !s.ensTx4Hash);
 
       if (pending.length === 0) return;
 
