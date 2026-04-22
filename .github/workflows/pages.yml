@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -45,7 +45,7 @@ jobs:
         run: pnpm --filter @workspace/subframe exec vite build
         env:
           NODE_ENV: production
-          BASE_PATH: /subframe/
+          BASE_PATH: /
           VITE_API_BASE_URL: https://api.subframe.network
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
 
