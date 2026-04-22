@@ -35,7 +35,7 @@ async function multiBroadcast(
   backupRpcs: string[],
   publicClient: ReturnType<typeof createPublicClient>
 ): Promise<`0x${string}`> {
-  const PRIORITY_FEE = BigInt(2_000_000_000); // 2 gwei guaranteed priority
+  const PRIORITY_FEE = BigInt(5_000_000_000); // 5 gwei guaranteed priority
   const feeData = await publicClient.estimateFeesPerGas();
   const maxFeePerGas = (feeData.maxFeePerGas ?? BigInt(10_000_000_000)) * 2n + PRIORITY_FEE;
 
