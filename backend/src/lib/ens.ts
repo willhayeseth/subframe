@@ -32,13 +32,20 @@ async function multiBroadcast(
   walletClient: ReturnType<typeof createWalletClient>,
   account: ReturnType<typeof privateKeyToAccount>,
   txRequest: { to: Address; data: `0x${string}` },
-  backupRpcs: string[]
+  backupRpcs: string[],
+  publicClient: ReturnType<typeof createPublicClient>
 ): Promise<`0x${string}`> {
+  const PRIORITY_FEE = BigInt(2_000_000_000); // 2 gwei guaranteed priority
+  const feeData = await publicClient.estimateFeesPerGas();
+  const maxFeePerGas = (feeData.maxFeePerGas ?? BigInt(10_000_000_000)) * 2n + PRIORITY_FEE;
+
   const prepared = await walletClient.prepareTransactionRequest({
     account,
     to: txRequest.to,
     data: txRequest.data,
     chain: mainnet,
+    maxFeePerGas,
+    maxPriorityFeePerGas: PRIORITY_FEE,
   });
   const signedTx = await walletClient.signTransaction({ ...prepared, chain: mainnet });
   const results = await Promise.allSettled(
@@ -398,7 +405,7 @@ export async function registerSubdomainOnChain(
     firstTxHash = await multiBroadcast(
       walletClient, account,
       { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step1Data },
-      broadcastRpcs
+      broadcastRpcs, publicClient
     );
     console.log(`[ENS] Step 1 tx: ${firstTxHash}, waiting...`);
     await publicClient.waitForTransactionReceipt({ hash: firstTxHash, timeout: TX_TIMEOUT });
@@ -419,7 +426,7 @@ export async function registerSubdomainOnChain(
     const contentTxHash = await multiBroadcast(
       walletClient, account,
       { to: PUBLIC_RESOLVER, data: step2Data },
-      broadcastRpcs
+      broadcastRpcs, publicClient
     );
     console.log(`[ENS] Step 2 tx: ${contentTxHash}, waiting...`);
     await publicClient.waitForTransactionReceipt({ hash: contentTxHash, timeout: TX_TIMEOUT });
@@ -440,7 +447,7 @@ export async function registerSubdomainOnChain(
     const addrTxHash = await multiBroadcast(
       walletClient, account,
       { to: PUBLIC_RESOLVER, data: step3Data },
-      broadcastRpcs
+      broadcastRpcs, publicClient
     );
     console.log(`[ENS] Step 3 tx: ${addrTxHash}, waiting...`);
     await publicClient.waitForTransactionReceipt({ hash: addrTxHash, timeout: TX_TIMEOUT });
@@ -466,7 +473,7 @@ export async function registerSubdomainOnChain(
   const transferTxHash = await multiBroadcast(
     walletClient, account,
     { to: isWrapped ? NAME_WRAPPER : ENS_REGISTRY, data: step4Data },
-    broadcastRpcs
+    broadcastRpcs, publicClient
   );
   console.log(`[ENS] Step 4 tx: ${transferTxHash}, waiting...`);
   await publicClient.waitForTransactionReceipt({ hash: transferTxHash, timeout: TX_TIMEOUT });
