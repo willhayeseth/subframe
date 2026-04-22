@@ -588,8 +588,8 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
         var wallet = null, analysis = null;
         try {
           var [wr, ar] = await Promise.all([
-            fetch(API + '/api/wallet/' + encodeURIComponent(sub.walletAddress)),
-            fetch(API + '/api/wallet/' + encodeURIComponent(sub.walletAddress) + '/analyze')
+            fetch(API + '/api/wallets/' + encodeURIComponent(sub.walletAddress)),
+            fetch(API + '/api/wallets/' + encodeURIComponent(sub.walletAddress) + '/analyze')
           ]);
           if(wr.ok) wallet = await wr.json();
           if(ar.ok) analysis = await ar.json();
