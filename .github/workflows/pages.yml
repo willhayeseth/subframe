@@ -1,0 +1,53 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm exec tsc --build packages/db
+          pnpm exec tsc --build packages/api-zod
+          pnpm exec tsc --build packages/api-client-react
+
+      - name: Build frontend
+        run: pnpm --filter @workspace/subframe exec vite build
+        env:
+          NODE_ENV: production
+          BASE_PATH: /subframe/
+          VITE_API_BASE_URL: https://api.subframe.eth.limo
+          VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: frontend/dist/public
+          branch: gh-pages
+          clean: true
+          git-config-name: Will Hayes
+          git-config-email: 278034540+willhayeseth@users.noreply.github.com
