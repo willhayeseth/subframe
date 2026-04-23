@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Layers, Globe } from "lucide-react";
 import { useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 import { SubframeNetworkMap } from "../components/network-map";
+import { ArtCard } from "@/components/art-card";
+
+const MOCK_ART = [
+  { id: 1, image: null, creator: "vitalik.subframe.eth", name: "Vitalik Art", priceEth: "0.0045", change24h: 18.3, volumeEth: "1.23" },
+  { id: 2, image: null, creator: "hayes.subframe.eth", name: "Hayes Art", priceEth: "0.0012", change24h: -8.5, volumeEth: "0.31" },
+  { id: 3, image: null, creator: "cryptoninja.subframe.eth", name: "CryptoNinja Art", priceEth: "0.0089", change24h: 42.1, volumeEth: "3.77" },
+  { id: 4, image: null, creator: "defiwhale.subframe.eth", name: "DefiWhale Art", priceEth: "0.0031", change24h: 5.6, volumeEth: "0.88" },
+  { id: 5, image: null, creator: "satoshi.subframe.eth", name: "Satoshi Art", priceEth: "0.0201", change24h: 67.4, volumeEth: "9.10" },
+  { id: 6, image: null, creator: "name.subframe.eth", name: "Name Art", priceEth: "0.0008", change24h: -2.1, volumeEth: "0.07" },
+];
 
 function StatusBadge({ status }: { status: string }) {
   const c: Record<string, string> = {
@@ -24,6 +34,7 @@ function openProfile(name: string) {
 
 export default function Explore() {
   const { data: subdomains, isLoading } = useListSubdomains();
+  const [view, setView] = useState<"identities" | "art">("identities");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "linked" | "active" | "pending">("all");
   const [highlighted, setHighlighted] = useState<string | null>(null);
@@ -45,7 +56,7 @@ export default function Explore() {
       <div className="flex flex-1 min-h-0 gap-0">
 
         {/* LEFT: full-height map */}
-        <div className="hidden lg:flex flex-col flex-1 min-w-0 p-5 pr-2.5">
+        <div className={`${view === "identities" ? "hidden lg:flex" : "hidden"} flex-col flex-1 min-w-0 p-5 pr-2.5`}>
           <SubframeNetworkMap
             subdomains={subdomains ?? []}
             currentName={highlighted ?? ""}
@@ -70,6 +81,25 @@ export default function Explore() {
               </div>
             </div>
 
+            <div className="flex gap-1.5 mb-3">
+              {(["identities", "art"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border transition-all ${
+                    view === v
+                      ? "bg-[#CBFF4D]/12 border-[#CBFF4D]/30 text-[#CBFF4D]"
+                      : "border-white/8 text-white/35 hover:text-white/60 hover:bg-white/5"
+                  }`}
+                >
+                  {v === "art" ? <Layers className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                  {v}
+                </button>
+              ))}
+            </div>
+
+            {view === "identities" && (
+            <>
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
               <input
@@ -98,10 +128,35 @@ export default function Explore() {
                 </button>
               ))}
             </div>
+            </>
+            )}
           </div>
 
           {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto">
+          {view === "art" && (
+            <div className="p-4 grid grid-cols-2 gap-3">
+              {MOCK_ART.map((item, i) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                >
+                  <ArtCard
+                    image={item.image}
+                    creator={item.creator}
+                    name={item.name}
+                    priceEth={item.priceEth}
+                    change24h={item.change24h}
+                    volumeEth={item.volumeEth}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
+          {view === "identities" && (
+            <>
             {isLoading && (
               <div className="flex items-center justify-center py-16 text-white/30 text-sm gap-2">
                 <svg className="w-4 h-4 animate-spin text-[#CBFF4D]/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -154,13 +209,17 @@ export default function Explore() {
                 </div>
               </motion.div>
             ))}
+            </>
+          )}
           </div>
 
+          {view === "identities" && (
           <div className="px-5 py-2.5 border-t border-white/[0.05] shrink-0">
             <p className="text-xs text-white/20 font-mono text-right">
               {filtered.length} of {subdomains?.length ?? 0} shown
             </p>
           </div>
+          )}
         </div>
 
       </div>
