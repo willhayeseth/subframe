@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { wagmiAdapter } from "@/lib/web3";
 import { Preloader } from "@/components/preloader";
+import Docs from "@/pages/docs";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
@@ -49,6 +50,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={withLayout(Home)} />
+      <Route path="/docs" component={Docs} />
+      <Route path="/docs/:page" component={Docs} />
+      <Route path="/docs/:section/:page" component={Docs} />
       <Route path="/claim" component={withLayout(Claim)} />
       <Route path="/onboarding/:name" component={withLayout(Onboarding)} />
       <Route path="/profile/:name" component={withLayout(Profile)} />
