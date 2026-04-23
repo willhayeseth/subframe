@@ -1153,6 +1153,43 @@ export function StandaloneProfile() {
           </motion.div>
         )}
 
+        {/* Art Token */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.22 }}
+        >
+          <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider">
+            <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
+            Art Token
+          </h2>
+          <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden">
+            <div className="aspect-video w-full flex items-center justify-center bg-[#111]">
+              <div className="flex flex-col items-center gap-2 text-white/20">
+                <div className="w-12 h-12 rounded-xl bg-[#CBFF4D]/8 border border-[#CBFF4D]/15 flex items-center justify-center">
+                  <ExternalLink className="w-6 h-6 text-[#CBFF4D]/40" />
+                </div>
+                <span className="text-xs font-mono">Art token pending</span>
+              </div>
+            </div>
+            <div className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-white/70">
+                  {subdomain.name} Art
+                </div>
+                <div className="text-xs text-white/30 font-mono mt-0.5">
+                  ERC-20 on Base
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-white/20 px-2 py-1 rounded-lg border border-white/8">
+                  Soon
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Deploy as Bot */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
