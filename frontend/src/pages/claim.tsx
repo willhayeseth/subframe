@@ -18,6 +18,7 @@ export default function Claim() {
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const [artConsent, setArtConsent] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -339,10 +340,36 @@ export default function Claim() {
                 />
               </div>
 
+              <div className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.04] p-4">
+                <p className="text-xs text-white/55 leading-relaxed mb-3">
+                  Your uploaded image will automatically be published as a tradable art token on Uniswap V2 on Base. You earn{" "}
+                  <span className="text-[#CBFF4D] font-bold">0.5%</span> from every buy and sell. Subframe takes 0.5%. The 1% fee applies everywhere the token trades.
+                </p>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    onClick={() => setArtConsent(!artConsent)}
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                      artConsent
+                        ? "bg-[#CBFF4D] border-[#CBFF4D]"
+                        : "border-white/30 bg-transparent group-hover:border-[#CBFF4D]/50"
+                    }`}
+                  >
+                    {artConsent && (
+                      <svg className="w-2.5 h-2.5 text-black" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-xs text-white/50 group-hover:text-white/70 transition-colors">
+                    I understand my image will be published as tradable on-chain art
+                  </span>
+                </label>
+              </div>
+
               <button
                 data-testid="btn-submit-claim"
                 type="submit"
-                disabled={!isAvailable || !isConnected || createSubdomain.isPending || avatarUploading}
+                disabled={!isAvailable || !isConnected || createSubdomain.isPending || avatarUploading || !artConsent}
                 className="w-full flex items-center justify-center gap-2.5 py-4 btn-lime rounded-xl font-bold text-black disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {createSubdomain.isPending ? (
