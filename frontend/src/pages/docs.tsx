@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   BookOpen, Zap, AtSign, Fuel, User, Database, Globe,
-  BarChart2, MessageSquare, Code2, FileCode, Webhook, Shield,
+  BarChart2, Layers, MessageSquare, Code2, FileCode, Webhook, Shield,
   Twitter, Send, Inbox, ImageIcon, ArrowRight, ChevronRight,
   CheckCircle2, Info, AlertTriangle, Copy, Check
 } from "lucide-react";
@@ -548,6 +548,78 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
         <H2 id="verify">Verifying webhook signatures</H2>
         <P>Each webhook POST includes an <code className="text-xs px-1.5 py-0.5 rounded font-mono" style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.8)" }}>X-Subframe-Signature</code> header containing an HMAC-SHA256 digest of the request body signed with your webhook secret.</P>
         <CodeBlock code={`import crypto from 'crypto'\n\nfunction verify(body: string, signature: string, secret: string) {\n  const expected = crypto\n    .createHmac('sha256', secret)\n    .update(body)\n    .digest('hex')\n  return crypto.timingSafeEqual(\n    Buffer.from(signature),\n    Buffer.from(expected)\n  )\n}`} language="typescript" />
+      </>
+    ),
+  },
+
+  "/docs/art-protocol": {
+    breadcrumb: "ART PROTOCOL",
+    sections: [
+      { id: "overview", title: "Overview" },
+      { id: "how-it-works", title: "How it works" },
+      { id: "token-standard", title: "Token standard" },
+      { id: "fees", title: "Fee structure" },
+    ],
+    content: (
+      <>
+        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-20 token on Base with built-in creator royalties." />
+        <Callout type="success">Subframe Protocol pays all gas fees for token deployment. Creators pay nothing.</Callout>
+        <H2 id="overview">Overview</H2>
+        <P>When you upload a profile image during the claim flow, Subframe Protocol deploys a fee-on-transfer ERC-20 token on Base representing your art. The token is immediately seeded with an initial Uniswap V2 liquidity pool and is tradable by anyone.</P>
+        <P>Your image is stored permanently on IPFS and attached to the token metadata. The token contract references your ENS subdomain so ownership and creator identity are fully on-chain.</P>
+        <H2 id="how-it-works">How it works</H2>
+        {[
+          ["Upload image", "Upload any JPG, PNG, WebP, or GIF during the claim step. Subframe stores it on IPFS."],
+          ["Token deployed", "The protocol deploys a fee-on-transfer ERC-20 contract on Base with your wallet as the creator address."],
+          ["Liquidity seeded", "Subframe seeds an initial Uniswap V2 WETH pool so the token is immediately tradable."],
+          ["Fees flow forever", "Every transfer triggers a 1% fee split: 0.5% to your wallet, 0.5% to the protocol treasury."],
+        ].map(([label, desc], i) => (
+          <Step key={label} number={i + 1} title={label}>
+            {desc}
+          </Step>
+        ))}
+        <H2 id="token-standard">Token standard</H2>
+        <P>Art tokens follow the ERC-20 standard with a fee-on-transfer extension. Each transfer deducts 1% from the transferred amount before crediting the recipient. The fee is automatically split and sent to the creator and the protocol treasury.</P>
+        <Callout type="info">Tokens use Uniswap V2, not V3. Uniswap V3 concentrated liquidity pools do not support fee-on-transfer tokens. V2 constant product pools handle the fee correctly.</Callout>
+        <H2 id="fees">Fee structure</H2>
+        <div className="space-y-3 mb-6">
+          {[
+            ["Transfer tax", "1% deducted on every transfer (buy, sell, or wallet-to-wallet)."],
+            ["Creator share", "0.5% goes directly to the creator wallet address on every transfer."],
+            ["Protocol share", "0.5% goes to the Subframe Protocol treasury."],
+            ["Deployment gas", "Zero. Subframe Protocol covers all deployment and seeding gas."],
+          ].map(([label, desc]) => (
+            <div key={label} className="flex gap-3 px-4 py-3.5 rounded-xl" style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#CBFF4D" }} />
+              <div>
+                <div className="text-[13.5px] font-medium mb-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{label}</div>
+                <div className="text-[12.5px]" style={{ color: "rgba(255,255,255,0.42)" }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
+  },
+
+  "/docs/art-trading": {
+    breadcrumb: "ART PROTOCOL",
+    sections: [
+      { id: "trading", title: "Trading your art" },
+      { id: "uniswap", title: "Uniswap V2" },
+      { id: "royalties", title: "Creator royalties" },
+    ],
+    content: (
+      <>
+        <PageTitle icon={BarChart2} title="Trading and Fees" description="How art tokens trade on Uniswap V2 and how creator royalties are distributed." />
+        <H2 id="trading">Trading your art</H2>
+        <P>Each art token has its own Uniswap V2 WETH liquidity pool on Base. Anyone can buy or sell the token directly through Uniswap V2, any Uniswap V2 compatible DEX aggregator, or directly on-chain.</P>
+        <P>The token contract is a standard ERC-20 with a 1% fee-on-transfer. The fee is applied on every transfer regardless of the venue, including wallet-to-wallet sends.</P>
+        <H2 id="uniswap">Uniswap V2</H2>
+        <P>Art tokens use Uniswap V2 constant product AMM. The initial pool is seeded by the protocol. As more people buy and sell, the pool depth grows through natural trading activity.</P>
+        <Callout type="warning">Uniswap V3 does not support fee-on-transfer tokens. Always use a Uniswap V2 router or aggregator that routes through V2 pools when trading art tokens.</Callout>
+        <H2 id="royalties">Creator royalties</H2>
+        <P>Royalties are trustless and automatic. The creator address is hardcoded at deployment time and cannot be changed. Every transfer sends 0.5% of the transfer amount directly to the creator wallet. No claim step is needed. No platform intermediary holds the funds.</P>
       </>
     ),
   },
