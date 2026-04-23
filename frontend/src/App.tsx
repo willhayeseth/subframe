@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { wagmiAdapter } from "@/lib/web3";
+import { Preloader } from "@/components/preloader";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
@@ -63,10 +64,13 @@ function Router() {
 }
 
 function App() {
+  const [loading, setLoading] = useState(true);
+
   return (
     <WagmiProvider config={wagmiAdapter.wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          {loading && <Preloader onDone={() => setLoading(false)} />}
           <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "")}>
             <Router />
           </WouterRouter>
