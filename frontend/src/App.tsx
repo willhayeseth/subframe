@@ -19,6 +19,7 @@ import EnsIdentity from "@/pages/ens-identity";
 import AiAnalysis from "@/pages/ai-analysis";
 import AiChat from "@/pages/ai-chat";
 import Collection from "@/pages/collection";
+import ArtProtocol from "@/pages/art-protocol";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/ai-analysis" component={withLayout(AiAnalysis)} />
       <Route path="/ai-chat" component={withLayout(AiChat)} />
       <Route path="/collection" component={withLayout(Collection)} />
+      <Route path="/art-protocol" component={withLayout(ArtProtocol)} />
       <Route path="/:name" component={StandaloneProfile} />
       <Route component={withLayout(NotFound)} />
     </Switch>

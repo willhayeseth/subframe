@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowRight, ChevronRight, ImageIcon, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowRight, ChevronRight } from "lucide-react";
 import { useGetSubdomainStats, useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 
@@ -27,26 +27,28 @@ function Marquee({ items, reverse = false }: { items: string[]; reverse?: boolea
   );
 }
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+
 const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } },
 };
 const textItem = {
-  hidden: { opacity: 0, y: 55, scale: 0.88 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 0, y: 48, filter: "blur(10px)" },
+  visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: EASE } },
 };
 const mediaItem = {
-  hidden: { opacity: 0, scale: 0.72, filter: "blur(16px)" },
-  visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 0, scale: 0.78, filter: "blur(20px)" },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 1.0, ease: EASE } },
 };
 
 function ScrollCard({ children, index }: { children: ReactNode; index: number }) {
   return (
     <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.08 }}
-      variants={containerVariants}
+      initial={{ opacity: 0, y: 52, filter: "blur(12px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      viewport={{ once: false, amount: 0.08 }}
+      transition={{ duration: 0.85, ease: EASE, delay: index * 0.1 }}
       className="w-full"
       style={{ willChange: "transform, opacity" }}
     >
@@ -66,9 +68,9 @@ function FeatureBlock({
     <motion.div
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 0.08 }}
+      viewport={{ once: false, amount: 0.08 }}
       variants={containerVariants}
-      className={`relative flex flex-col ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-16 py-16 lg:py-24`}
+      className={`relative flex flex-col ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-16 py-10 lg:py-14`}
     >
       <div className="flex-1 min-w-0">
         <motion.div variants={textItem} className="text-sm font-mono text-white/30 mb-5 tracking-wider">
@@ -138,88 +140,40 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
   );
 }
 
-const ART_BARS = [6, 8, 10, 10, 12, 14, 16, 18, 22, 28, 36, 44, 56, 68, 80, 92, 100];
 
 function ArtAnim() {
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[#111411] p-6 flex flex-col justify-between">
+    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[#111411] p-5 flex flex-col justify-between">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/25 to-transparent" />
 
-      <div className="flex items-center justify-between gap-2 mb-5">
-        <div className="flex flex-col items-center gap-2.5">
-          <div className="w-[62px] h-[62px] rounded-[18px] bg-[#1a201a] border border-[#CBFF4D]/18 flex items-center justify-center">
-            <ImageIcon className="w-7 h-7 text-[#CBFF4D]/80" />
-          </div>
-          <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest leading-none">YOUR ART</span>
-        </div>
-
-        <div className="flex items-center gap-1 mb-4">
-          <div className="w-5 h-px bg-white/15" />
-          <span className="text-white/25 text-sm font-mono">&#8594;</span>
-          <div className="w-5 h-px bg-white/15" />
-        </div>
-
-        <div className="flex flex-col items-center gap-2.5">
-          <div className="w-[62px] h-[62px] rounded-full bg-[#CBFF4D] flex items-center justify-center shadow-[0_0_24px_rgba(203,255,77,0.35)]">
-            <span className="text-black font-black text-[11px] tracking-tight leading-none">ERC20</span>
-          </div>
-          <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest leading-none">TOKEN</span>
-        </div>
-
-        <div className="flex items-center gap-1 mb-4">
-          <div className="w-5 h-px bg-white/15" />
-          <span className="text-white/25 text-sm font-mono">&#8594;</span>
-          <div className="w-5 h-px bg-white/15" />
-        </div>
-
-        <div className="flex flex-col items-center gap-2.5">
-          <div className="w-[62px] h-[62px] rounded-[18px] bg-[#0e1e1a] border border-emerald-500/20 flex items-center justify-center">
-            <TrendingUp className="w-7 h-7 text-emerald-400" />
-          </div>
-          <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest leading-none">UNISWAP</span>
-        </div>
+      <div className="mb-4 rounded-xl overflow-hidden w-full">
+        <video
+          src="/art-chart.webm"
+          autoPlay
+          muted
+          loop
+          playsInline
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
+          className="w-full h-auto block"
+          style={{ pointerEvents: "none" }}
+        >
+          <source src="/art-chart.webm" type="video/webm" />
+          <source src="/art-chart.mp4" type="video/mp4" />
+        </video>
       </div>
 
-      <div className="h-px bg-white/[0.06] mb-5" />
-
-      <div className="flex items-end gap-[3px] mb-5" style={{ height: 72 }}>
-        {ART_BARS.map((h, i) => {
-          const bright = i >= ART_BARS.length - 5;
-          const mid = i >= ART_BARS.length - 9 && !bright;
-          return (
-            <div
-              key={i}
-              className="flex-1 rounded-sm"
-              style={{
-                height: `${h}%`,
-                background: bright
-                  ? "#CBFF4D"
-                  : mid
-                  ? "rgba(203,255,77,0.45)"
-                  : "rgba(203,255,77,0.14)",
-              }}
-            />
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5">
         <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
           <div className="text-[15px] font-black font-mono text-[#CBFF4D] leading-none">0.5%</div>
           <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
-            Creator<br />Fee
+            Creator Fee
           </div>
         </div>
         <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
           <div className="text-[15px] font-black font-mono text-[#CBFF4D] leading-none">0%</div>
           <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
             Gas Cost
-          </div>
-        </div>
-        <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
-          <div className="text-[17px] font-black text-[#CBFF4D] leading-none italic">Always</div>
-          <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
-            Liquid
           </div>
         </div>
       </div>
@@ -390,7 +344,7 @@ export default function Home() {
 
       {/* ─── FEATURES ─── */}
       <section
-        className="px-5 md:px-10 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        className="px-5 md:px-10 max-w-7xl mx-auto w-full py-10 md:py-14 flex flex-col justify-center"
         style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
       >
         <FeatureBlock
@@ -427,35 +381,31 @@ export default function Home() {
           ctaLabel="Discover AI Chat"
           ctaHref="/ai-chat"
         />
-      </section>
 
-      {/* ART PROTOCOL */}
-      <section
-        className="px-5 md:px-10 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
-        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
-      >
+        <div className="w-full h-px bg-white/5" />
+
         <FeatureBlock
           number="04"
-          title="Your art, tradable on"
-          titleAccent="Ethereum"
+          title="Turn your PFP into"
+          titleAccent="tradable art"
           desc="Upload any image when you claim your identity. It becomes an ERC-20 token on Uniswap V2. You earn 0.5% from every buy and sell, forever. Protocol pays the gas."
           animation={<ArtAnim />}
           reverse
           ctaLabel="Start Creating"
-          ctaHref="/claim"
+          ctaHref="/art-protocol"
         />
       </section>
 
       {/* ─── REGISTRY ─── */}
       <section
-        className="px-5 md:px-10 py-20 md:py-32 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        className="px-5 md:px-10 py-12 md:py-16 max-w-7xl mx-auto w-full flex flex-col justify-center"
         style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
       >
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, y: 48, filter: "blur(10px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.9, ease: EASE }}
           className="flex items-end justify-between gap-4 mb-14"
         >
           <div>
@@ -496,14 +446,14 @@ export default function Home() {
 
       {/* ─── HOW IT WORKS ─── */}
       <section
-        className="px-5 md:px-10 py-20 md:py-32 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        className="px-5 md:px-10 py-12 md:py-16 max-w-7xl mx-auto w-full flex flex-col justify-center"
         style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
       >
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, y: 48, filter: "blur(10px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.9, ease: EASE }}
         >
           <div className="text-sm font-mono text-white/30 mb-6 tracking-wider">/ 05</div>
           <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-tight mb-16">
