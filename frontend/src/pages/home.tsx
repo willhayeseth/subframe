@@ -209,15 +209,15 @@ export default function Home() {
               transition={{ delay: 0.35, duration: 0.5 }}
               className="flex flex-wrap items-center gap-4"
             >
-              <a href="https://github.com/willhayeseth/subframe" target="_blank" rel="noopener noreferrer">
+              <Link href="/docs">
                 <button
                   data-testid="btn-docs"
                   className="flex items-center gap-2 px-8 py-4 btn-lime text-base font-black rounded-full"
                 >
                   Documentation
-                  <ArrowUpRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5" />
                 </button>
-              </a>
+              </Link>
               <Link href="/explore">
                 <button
                   data-testid="btn-explore"
