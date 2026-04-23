@@ -138,62 +138,90 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
   );
 }
 
+const ART_BARS = [6, 8, 10, 10, 12, 14, 16, 18, 22, 28, 36, 44, 56, 68, 80, 92, 100];
+
 function ArtAnim() {
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-[#0e0e0e] border border-white/[0.07] p-6">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/20 to-transparent" />
-      <div className="flex items-center justify-between gap-3 mb-6">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-14 h-14 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center">
-            <ImageIcon className="w-7 h-7 text-[#CBFF4D]" />
+    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[#111411] p-6 flex flex-col justify-between">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/25 to-transparent" />
+
+      <div className="flex items-center justify-between gap-2 mb-5">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="w-[62px] h-[62px] rounded-[18px] bg-[#1a201a] border border-[#CBFF4D]/18 flex items-center justify-center">
+            <ImageIcon className="w-7 h-7 text-[#CBFF4D]/80" />
           </div>
-          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Your Art</span>
+          <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest leading-none">YOUR ART</span>
         </div>
-        <div className="flex-1 flex items-center justify-center gap-1">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#CBFF4D]/30" />
-          <ArrowRight className="w-4 h-4 text-[#CBFF4D]/40 shrink-0" />
+
+        <div className="flex items-center gap-1 mb-4">
+          <div className="w-5 h-px bg-white/15" />
+          <span className="text-white/25 text-sm font-mono">&#8594;</span>
+          <div className="w-5 h-px bg-white/15" />
         </div>
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-14 h-14 rounded-full bg-[#CBFF4D] flex items-center justify-center">
-            <span className="text-black font-black text-xs">ERC20</span>
+
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="w-[62px] h-[62px] rounded-full bg-[#CBFF4D] flex items-center justify-center shadow-[0_0_24px_rgba(203,255,77,0.35)]">
+            <span className="text-black font-black text-[11px] tracking-tight leading-none">ERC20</span>
           </div>
-          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Token</span>
+          <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest leading-none">TOKEN</span>
         </div>
-        <div className="flex-1 flex items-center justify-center gap-1">
-          <div className="h-px flex-1 bg-gradient-to-r from-[#CBFF4D]/30 to-transparent" />
-          <ArrowRight className="w-4 h-4 text-[#CBFF4D]/40 shrink-0" />
+
+        <div className="flex items-center gap-1 mb-4">
+          <div className="w-5 h-px bg-white/15" />
+          <span className="text-white/25 text-sm font-mono">&#8594;</span>
+          <div className="w-5 h-px bg-white/15" />
         </div>
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-14 h-14 rounded-xl bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center">
+
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="w-[62px] h-[62px] rounded-[18px] bg-[#0e1e1a] border border-emerald-500/20 flex items-center justify-center">
             <TrendingUp className="w-7 h-7 text-emerald-400" />
           </div>
-          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Uniswap</span>
+          <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest leading-none">UNISWAP</span>
         </div>
       </div>
-      <div className="h-px bg-white/5 mb-5" />
-      <div className="flex items-end gap-1 h-12 mb-5">
-        {[20, 28, 22, 38, 35, 52, 48, 65, 58, 80, 75, 95].map((h, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-t"
-            style={{
-              height: `${h}%`,
-              background: i >= 8 ? "#CBFF4D" : "rgba(203,255,77,0.25)",
-            }}
-          />
-        ))}
+
+      <div className="h-px bg-white/[0.06] mb-5" />
+
+      <div className="flex items-end gap-[3px] mb-5" style={{ height: 72 }}>
+        {ART_BARS.map((h, i) => {
+          const bright = i >= ART_BARS.length - 5;
+          const mid = i >= ART_BARS.length - 9 && !bright;
+          return (
+            <div
+              key={i}
+              className="flex-1 rounded-sm"
+              style={{
+                height: `${h}%`,
+                background: bright
+                  ? "#CBFF4D"
+                  : mid
+                  ? "rgba(203,255,77,0.45)"
+                  : "rgba(203,255,77,0.14)",
+              }}
+            />
+          );
+        })}
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { v: "0.5%", l: "Creator fee" },
-          { v: "0%", l: "Gas cost" },
-          { v: "Always", l: "Liquid" },
-        ].map((s) => (
-          <div key={s.l} className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-            <div className="text-base font-black font-mono text-[#CBFF4D]">{s.v}</div>
-            <div className="text-[10px] text-white/30 mt-1 uppercase tracking-wider">{s.l}</div>
+
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+          <div className="text-[15px] font-black font-mono text-[#CBFF4D] leading-none">0.5%</div>
+          <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
+            Creator<br />Fee
           </div>
-        ))}
+        </div>
+        <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+          <div className="text-[15px] font-black font-mono text-[#CBFF4D] leading-none">0%</div>
+          <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
+            Gas Cost
+          </div>
+        </div>
+        <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+          <div className="text-[17px] font-black text-[#CBFF4D] leading-none italic">Always</div>
+          <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
+            Liquid
+          </div>
+        </div>
       </div>
     </div>
   );
