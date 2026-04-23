@@ -18,7 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --no-frozen-lockfile
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
       - name: Build composite packages
         run: |
           pnpm exec tsc --build packages/db
@@ -37,7 +38,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --no-frozen-lockfile
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
       - name: Build composite packages
         run: |
           pnpm exec tsc --build packages/db
@@ -59,7 +61,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --no-frozen-lockfile
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
       - name: Build composite packages
         run: |
           pnpm exec tsc --build packages/db
