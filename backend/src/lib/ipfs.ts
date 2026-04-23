@@ -42,10 +42,21 @@ function generateProfileHTML(profile: SubframeProfile): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${ensFullName} | Subframe Protocol</title>
   <meta name="description" content="${bio ?? `${ensFullName} - Web3 identity on Subframe Protocol`}" />
-  <meta property="og:title" content="${ensFullName}" />
-  <meta property="og:description" content="${bio ?? `${ensFullName} on Subframe Protocol`}" />
+  <link rel="icon" type="image/png" href="https://subframe.network/favicon.png" />
+  <link rel="shortcut icon" href="https://subframe.network/favicon.png" />
+  <link rel="apple-touch-icon" href="https://subframe.network/favicon.png" />
   <meta property="og:type" content="profile" />
-  ${avatarUrl ? `<meta property="og:image" content="${avatarUrl}" />` : ""}
+  <meta property="og:site_name" content="Subframe Protocol" />
+  <meta property="og:title" content="${ensFullName} | Subframe Protocol" />
+  <meta property="og:description" content="${bio ?? `${ensFullName} - Web3 identity on Subframe Protocol`}" />
+  <meta property="og:image" content="${avatarUrl ?? "https://subframe.network/favicon.png"}" />
+  <meta property="og:image:width" content="1024" />
+  <meta property="og:image:height" content="1024" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@subframeeth" />
+  <meta name="twitter:title" content="${ensFullName} | Subframe Protocol" />
+  <meta name="twitter:description" content="${bio ?? `${ensFullName} - Web3 identity on Subframe Protocol`}" />
+  <meta name="twitter:image" content="${avatarUrl ?? "https://subframe.network/favicon.png"}" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -202,6 +213,32 @@ function generateProfileHTML(profile: SubframeProfile): string {
       text-align: center;
     }
     .footer a { color: rgba(203,255,77,0.3); text-decoration: none; }
+    /* action buttons row */
+    .action-row { display: flex; gap: 8px; margin-top: 10px; }
+    .half-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.45); font-size: 13px; font-weight: 700; padding: 11px 8px; border-radius: 10px; cursor: pointer; transition: all .15s; font-family: inherit; }
+    .half-btn:hover { border-color: rgba(203,255,77,.25); background: rgba(203,255,77,.04); color: rgba(255,255,255,.85); }
+    /* modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; align-items: flex-end; justify-content: center; padding: 16px; background: rgba(0,0,0,.78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .modal-overlay.open { display: flex; }
+    @media(min-width: 480px){ .modal-overlay { align-items: center; } }
+    .modal-box { width: 100%; max-width: 380px; background: #111; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; overflow: hidden; position: relative; animation: slideUp .2s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+    .modal-top-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(203,255,77,.3), transparent); }
+    .modal-inner { padding: 22px; }
+    .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .modal-icon-wrap { display: flex; align-items: center; gap: 12px; }
+    .modal-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(203,255,77,.1); border: 1px solid rgba(203,255,77,.2); display: flex; align-items: center; justify-content: center; }
+    .modal-title { font-size: 15px; font-weight: 900; color: #fff; margin-bottom: 4px; }
+    .cs-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: rgba(203,255,77,.12); color: #CBFF4D; border: 1px solid rgba(203,255,77,.22); text-transform: uppercase; letter-spacing: .06em; }
+    .modal-close { background: none; border: none; color: rgba(255,255,255,.3); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { color: #fff; }
+    .modal-text { font-size: 13px; color: rgba(255,255,255,.4); line-height: 1.65; }
+    .ct-amounts { display: flex; gap: 8px; margin: 14px 0; }
+    .ct-amt { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: rgba(255,255,255,.4); font-size: 12px; font-weight: 900; font-family: monospace; cursor: pointer; transition: all .15s; }
+    .ct-amt:hover { border-color: rgba(203,255,77,.3); }
+    .ct-amt.active { border-color: rgba(203,255,77,.4); background: rgba(203,255,77,.1); color: #CBFF4D; }
+    .ct-start { width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.22); font-size: 13px; font-weight: 700; cursor: not-allowed; margin-bottom: 8px; font-family: inherit; }
+    .ct-note { font-size: 10px; color: rgba(255,255,255,.2); text-align: center; }
   </style>
 </head>
 <body>
@@ -248,6 +285,17 @@ function generateProfileHTML(profile: SubframeProfile): string {
         <span class="dot-live"></span>
         Identity verified on-chain
       </div>
+
+      <div class="action-row">
+        <button class="half-btn" onclick="openModal('messages')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Messages
+        </button>
+        <button class="half-btn" onclick="openModal('copytrade')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17 1 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 23-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          Copy Trade
+        </button>
+      </div>
     </div>
   </div>
 
@@ -255,6 +303,61 @@ function generateProfileHTML(profile: SubframeProfile): string {
     Hosted on IPFS via <a href="https://www.pinata.cloud/" target="_blank">Pinata</a>
     &nbsp;·&nbsp; Resolved by <a href="https://eth.limo" target="_blank">eth.limo</a>
   </div>
+
+  <!-- Coming Soon Modal -->
+  <div id="cs-modal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-top-line"></div>
+      <div class="modal-inner">
+        <div class="modal-header">
+          <div class="modal-icon-wrap">
+            <div class="modal-icon" id="modal-icon"></div>
+            <div>
+              <div class="modal-title" id="modal-title"></div>
+              <span class="cs-badge">Coming Soon</span>
+            </div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function openModal(type) {
+    var modal = document.getElementById('cs-modal');
+    var icon = document.getElementById('modal-icon');
+    var title = document.getElementById('modal-title');
+    var body = document.getElementById('modal-body');
+    if (type === 'messages') {
+      icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CBFF4D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+      title.textContent = 'Messages';
+      body.innerHTML = '<p class="modal-text">Send on-chain encrypted messages to this wallet. Powered by XMTP protocol, messages are stored decentrally and readable only by the recipient.</p>';
+    } else {
+      icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CBFF4D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17 1 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 23-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+      title.textContent = 'Copy Trade';
+      body.innerHTML = '<p class="modal-text">Auto-mirror every trade this wallet makes. Choose your position size and we handle execution.</p>' +
+        '<div class="ct-amounts">' +
+          '<button class="ct-amt active" onclick="selectAmt(this)">0.1 ETH</button>' +
+          '<button class="ct-amt" onclick="selectAmt(this)">0.3 ETH</button>' +
+          '<button class="ct-amt" onclick="selectAmt(this)">0.5 ETH</button>' +
+        '</div>' +
+        '<button class="ct-start">Start Copy Trade</button>' +
+        '<p class="ct-note">Feature launching soon. Join waitlist via X.</p>';
+    }
+    modal.classList.add('open');
+  }
+  function closeModal() {
+    document.getElementById('cs-modal').classList.remove('open');
+  }
+  function selectAmt(el) {
+    var parent = el.parentNode;
+    parent.querySelectorAll('.ct-amt').forEach(function(b){ b.classList.remove('active'); });
+    el.classList.add('active');
+  }
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+  </script>
 </body>
 </html>`;
 }
@@ -375,6 +478,18 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Subframe Protocol</title>
   <meta name="description" content="Web3 identity on subframe.eth" />
+  <link rel="icon" type="image/png" href="https://subframe.network/favicon.png" />
+  <link rel="shortcut icon" href="https://subframe.network/favicon.png" />
+  <link rel="apple-touch-icon" href="https://subframe.network/favicon.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Subframe Protocol" />
+  <meta property="og:title" content="Subframe Protocol" />
+  <meta property="og:description" content="Claim your permanent name.subframe.eth ENS subdomain. AI-powered wallet analysis and on-chain identity." />
+  <meta property="og:image" content="https://subframe.network/favicon.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@subframeeth" />
+  <meta name="twitter:title" content="Subframe Protocol" />
+  <meta name="twitter:image" content="https://subframe.network/favicon.png" />
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#0C0C0C;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
@@ -479,6 +594,32 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
     .footer{text-align:center;padding-bottom:8px}
     .footer a{color:rgba(255,255,255,.1);font-size:11px;text-decoration:none}
     .footer a:hover{color:rgba(203,255,77,.35)}
+    /* action buttons */
+    .action-row{display:flex;gap:8px;margin-top:14px}
+    .half-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.45);font-size:13px;font-weight:700;padding:11px 8px;border-radius:10px;cursor:pointer;transition:all .15s;font-family:inherit}
+    .half-btn:hover{border-color:rgba(203,255,77,.25);background:rgba(203,255,77,.04);color:rgba(255,255,255,.85)}
+    /* modal */
+    .modal-overlay{display:none;position:fixed;inset:0;z-index:100;align-items:flex-end;justify-content:center;padding:16px;background:rgba(0,0,0,.78);backdrop-filter:blur(6px)}
+    .modal-overlay.open{display:flex}
+    @media(min-width:480px){.modal-overlay{align-items:center}}
+    .modal-box{width:100%;max-width:380px;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:18px;overflow:hidden;position:relative;animation:slideUp .2s ease}
+    @keyframes slideUp{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+    .modal-top-line{height:1px;background:linear-gradient(90deg,transparent,rgba(203,255,77,.3),transparent)}
+    .modal-inner{padding:22px}
+    .modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+    .modal-icon-wrap{display:flex;align-items:center;gap:12px}
+    .modal-icon{width:40px;height:40px;border-radius:10px;background:rgba(203,255,77,.1);border:1px solid rgba(203,255,77,.2);display:flex;align-items:center;justify-content:center}
+    .modal-title{font-size:15px;font-weight:900;color:#fff;margin-bottom:4px}
+    .cs-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(203,255,77,.12);color:#CBFF4D;border:1px solid rgba(203,255,77,.22);text-transform:uppercase;letter-spacing:.06em}
+    .modal-close{background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px}
+    .modal-close:hover{color:#fff}
+    .modal-text{font-size:13px;color:rgba(255,255,255,.4);line-height:1.65}
+    .ct-amounts{display:flex;gap:8px;margin:14px 0}
+    .ct-amt{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:rgba(255,255,255,.4);font-size:12px;font-weight:900;font-family:monospace;cursor:pointer;transition:all .15s}
+    .ct-amt:hover{border-color:rgba(203,255,77,.3)}
+    .ct-amt.active{border-color:rgba(203,255,77,.4);background:rgba(203,255,77,.1);color:#CBFF4D}
+    .ct-start{width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.22);font-size:13px;font-weight:700;cursor:not-allowed;margin-bottom:8px;font-family:inherit}
+    .ct-note{font-size:10px;color:rgba(255,255,255,.2);text-align:center}
     @media(max-width:720px){
       .grid2{grid-template-columns:1fr}
       .ens-name{font-size:22px}
@@ -585,9 +726,29 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
           body: JSON.stringify({content: content, walletContext: walletCtx})
         });
         if(mr.ok){
-          var md = await mr.json();
           if(typingDiv) typingDiv.remove();
-          appendBubble('ai', md.content || md.message || JSON.stringify(md));
+          var aiBubble = appendBubble('ai','');
+          var reader = mr.body.getReader();
+          var decoder = new TextDecoder();
+          var aiText = '';
+          var streaming = true;
+          while(streaming){
+            var rv = await reader.read();
+            if(rv.done){ streaming=false; break; }
+            var chunk = decoder.decode(rv.value, {stream:true});
+            var lines = chunk.split('\\n');
+            for(var li=0;li<lines.length;li++){
+              var ln = lines[li];
+              if(ln.startsWith('data: ')){
+                try{
+                  var d = JSON.parse(ln.slice(6));
+                  if(d.content){ aiText+=d.content; if(aiBubble) aiBubble.textContent=aiText; var ms=document.getElementById('chat-msgs'); if(ms) ms.scrollTop=ms.scrollHeight; }
+                  if(d.done){ streaming=false; }
+                }catch(pe){}
+              }
+            }
+          }
+          if(aiBubble && !aiBubble.textContent) aiBubble.textContent='[No response]';
         } else {
           if(typingDiv) typingDiv.remove();
           appendBubble('ai','[Error: '+mr.status+']');
@@ -641,6 +802,15 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
       if(wallet && wallet.txCount != null){
         html += '<span class="tx-count-meta">'+Number(wallet.txCount).toLocaleString()+' transactions</span>';
       }
+      html += '</div>';
+      // action buttons
+      html += '<div class="action-row">';
+      html += '<button class="half-btn" onclick="openModal(\\'messages\\')">';
+      html += '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+      html += 'Messages</button>';
+      html += '<button class="half-btn" onclick="openModal(\\'copytrade\\')">';
+      html += '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17 1 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 23-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+      html += 'Copy Trade</button>';
       html += '</div>';
       html += '</div></div>'; // pcard-body + pcard
 
@@ -756,6 +926,61 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
 
     load();
   })();
+  </script>
+
+  <!-- Coming Soon Modal -->
+  <div id="cs-modal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-top-line"></div>
+      <div class="modal-inner">
+        <div class="modal-header">
+          <div class="modal-icon-wrap">
+            <div class="modal-icon" id="modal-icon"></div>
+            <div>
+              <div class="modal-title" id="modal-title"></div>
+              <span class="cs-badge">Coming Soon</span>
+            </div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function openModal(type) {
+    var modal = document.getElementById('cs-modal');
+    var icon = document.getElementById('modal-icon');
+    var title = document.getElementById('modal-title');
+    var body = document.getElementById('modal-body');
+    if (type === 'messages') {
+      icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CBFF4D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+      title.textContent = 'Messages';
+      body.innerHTML = '<p class="modal-text">Send on-chain encrypted messages to this wallet. Powered by XMTP protocol, messages are stored decentrally and readable only by the recipient.</p>';
+    } else {
+      icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CBFF4D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17 1 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 23-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+      title.textContent = 'Copy Trade';
+      body.innerHTML = '<p class="modal-text">Auto-mirror every trade this wallet makes. Choose your position size and we handle execution.</p>' +
+        '<div class="ct-amounts">' +
+          '<button class="ct-amt active" onclick="selectAmt(this)">0.1 ETH</button>' +
+          '<button class="ct-amt" onclick="selectAmt(this)">0.3 ETH</button>' +
+          '<button class="ct-amt" onclick="selectAmt(this)">0.5 ETH</button>' +
+        '</div>' +
+        '<button class="ct-start">Start Copy Trade</button>' +
+        '<p class="ct-note">Feature launching soon. Join waitlist via X.</p>';
+    }
+    modal.classList.add('open');
+  }
+  function closeModal() {
+    var el = document.getElementById('cs-modal');
+    if (el) el.classList.remove('open');
+  }
+  function selectAmt(el) {
+    el.parentNode.querySelectorAll('.ct-amt').forEach(function(b){ b.classList.remove('active'); });
+    el.classList.add('active');
+  }
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
   </script>
 </body>
 </html>`;
