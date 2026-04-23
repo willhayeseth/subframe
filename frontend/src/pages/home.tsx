@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ArrowRight, ChevronRight, ImageIcon, TrendingUp } from "lucide-react";
 import { useGetSubdomainStats, useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 
@@ -138,6 +138,67 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
   );
 }
 
+function ArtAnim() {
+  return (
+    <div className="relative w-full rounded-2xl overflow-hidden bg-[#0e0e0e] border border-white/[0.07] p-6">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/20 to-transparent" />
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-14 h-14 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center">
+            <ImageIcon className="w-7 h-7 text-[#CBFF4D]" />
+          </div>
+          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Your Art</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center gap-1">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#CBFF4D]/30" />
+          <ArrowRight className="w-4 h-4 text-[#CBFF4D]/40 shrink-0" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-14 h-14 rounded-full bg-[#CBFF4D] flex items-center justify-center">
+            <span className="text-black font-black text-xs">ERC20</span>
+          </div>
+          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Token</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center gap-1">
+          <div className="h-px flex-1 bg-gradient-to-r from-[#CBFF4D]/30 to-transparent" />
+          <ArrowRight className="w-4 h-4 text-[#CBFF4D]/40 shrink-0" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-14 h-14 rounded-xl bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center">
+            <TrendingUp className="w-7 h-7 text-emerald-400" />
+          </div>
+          <span className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Uniswap</span>
+        </div>
+      </div>
+      <div className="h-px bg-white/5 mb-5" />
+      <div className="flex items-end gap-1 h-12 mb-5">
+        {[20, 28, 22, 38, 35, 52, 48, 65, 58, 80, 75, 95].map((h, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-t"
+            style={{
+              height: `${h}%`,
+              background: i >= 8 ? "#CBFF4D" : "rgba(203,255,77,0.25)",
+            }}
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { v: "0.5%", l: "Creator fee" },
+          { v: "0%", l: "Gas cost" },
+          { v: "Always", l: "Liquid" },
+        ].map((s) => (
+          <div key={s.l} className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+            <div className="text-base font-black font-mono text-[#CBFF4D]">{s.v}</div>
+            <div className="text-[10px] text-white/30 mt-1 uppercase tracking-wider">{s.l}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const marqueeItems1 = ["ENS Subdomain", "AI Wallet", "IPFS Profile", "On-Chain Identity", "Web3 Chat", "Zero Gas"];
 const marqueeItems2 = ["Subframe Protocol", "Decentralized", "Ethereum", "AI Powered", "Open Registry", "Permissionless"];
 
@@ -200,7 +261,8 @@ export default function Home() {
               className="text-lg md:text-xl text-white/45 max-w-xl leading-relaxed mb-10"
             >
               Get your permanent{" "}
-              <span className="font-mono text-white/70">name.subframe.eth</span> subdomain with AI-powered profile, IPFS hosting, and on-chain AI chat.
+              <span className="font-mono text-white/70">name.subframe.eth</span>{" "}
+              subdomain with AI-powered wallet analysis, tradable on-chain art, IPFS profile hosting, on-chain AI chat, and a public Web3 identity that lives on Ethereum forever.
             </motion.p>
 
             <motion.div
@@ -339,6 +401,22 @@ export default function Home() {
         />
       </section>
 
+      {/* ART PROTOCOL */}
+      <section
+        className="px-5 md:px-10 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
+        <FeatureBlock
+          number="04"
+          title="Your art, tradable on"
+          titleAccent="Ethereum"
+          desc="Upload any image when you claim your identity. It becomes an ERC-20 token on Uniswap V2. You earn 0.5% from every buy and sell, forever. Protocol pays the gas."
+          animation={<ArtAnim />}
+          reverse
+          ctaLabel="Start Creating"
+          ctaHref="/claim"
+        />
+      </section>
 
       {/* ─── REGISTRY ─── */}
       <section
