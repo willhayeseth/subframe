@@ -7,10 +7,16 @@ const TOTAL = COLS * ROWS;
 const LOGO_APPEAR_DURATION = 0.5;
 const BLOCKS_START_DELAY = 0.55;
 
-function waveDelay(i: number, reverse = false): number {
-  const idx = reverse ? TOTAL - 1 - i : i;
-  const col = idx % COLS;
-  const row = Math.floor(idx / COLS);
+// All heavy assets visible on the landing page hero section
+const PRELOAD_IMAGES = [
+  "/subframe-hero-card.webp",
+  "/subframe-cta-asset.webp",
+];
+const PRELOAD_VIDEO = "/subframe-hero.mp4";
+
+function waveDelay(i: number): number {
+  const col = i % COLS;
+  const row = Math.floor(i / COLS);
   return BLOCKS_START_DELAY + (col + row) * 0.035;
 }
 
@@ -39,41 +45,56 @@ export function Preloader({ onDone }: PreloaderProps) {
 
   useEffect(() => {
     const startedAt = Date.now();
-    const MIN_TIME = 2200;
+    const MIN_TIME = 2000;
 
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      const elapsed = Date.now() - startedAt;
-      const wait = Math.max(0, MIN_TIME - elapsed);
-      setTimeout(triggerExit, wait);
+    const total = 1 + PRELOAD_IMAGES.length; // video + images
+    let loadedCount = 0;
+
+    const onAssetLoaded = () => {
+      loadedCount++;
+      const pct = Math.round((loadedCount / total) * 100);
+      setProgress(pct);
+
+      if (loadedCount >= total) {
+        const elapsed = Date.now() - startedAt;
+        const wait = Math.max(0, MIN_TIME - elapsed);
+        setTimeout(triggerExit, wait);
+      }
     };
 
-    setProgress(10);
+    setProgress(5);
 
-    const vid = document.createElement("video");
-    vid.preload = "auto";
-    vid.muted = true;
-    vid.playsInline = true;
-    const onLoad = () => { setProgress(100); finish(); };
-    vid.oncanplaythrough = onLoad;
-    vid.onerror = onLoad;
-    vid.src = "/subframe-hero.mp4";
-
-    let pct = 10;
-    const ticker = setInterval(() => {
-      if (vid.buffered.length > 0 && vid.duration) {
-        pct = Math.min(95, Math.round((vid.buffered.end(vid.buffered.length - 1) / vid.duration) * 100));
-      } else {
-        pct = Math.min(pct + 3, 85);
+    // Preload hero video — use fetch for reliable progress tracking
+    const videoReq = new XMLHttpRequest();
+    videoReq.open("GET", PRELOAD_VIDEO, true);
+    videoReq.responseType = "blob";
+    videoReq.onprogress = (e) => {
+      if (e.lengthComputable && loadedCount === 0) {
+        const videoPct = Math.round((e.loaded / e.total) * (100 / total));
+        setProgress(Math.max(5, videoPct));
       }
-      setProgress(pct);
-    }, 150);
+    };
+    videoReq.onload = onAssetLoaded;
+    videoReq.onerror = onAssetLoaded;
+    videoReq.send();
 
-    const fallback = setTimeout(() => { clearInterval(ticker); finish(); }, 5500);
+    // Preload images
+    PRELOAD_IMAGES.forEach((src) => {
+      const img = new Image();
+      img.onload = onAssetLoaded;
+      img.onerror = onAssetLoaded;
+      img.src = src;
+    });
 
-    return () => { clearInterval(ticker); clearTimeout(fallback); };
+    // Absolute fallback
+    const fallback = setTimeout(() => {
+      if (!exitCalled.current) triggerExit();
+    }, 8000);
+
+    return () => {
+      clearTimeout(fallback);
+      videoReq.abort();
+    };
   }, [triggerExit]);
 
   const blockVariants = {
@@ -175,7 +196,7 @@ export function Preloader({ onDone }: PreloaderProps) {
             style={{ height: "100%", background: "#CBFF4D", borderRadius: "99px" }}
             initial={{ width: "0%" }}
             animate={{ width: `${progress}%` }}
-            transition={{ ease: "easeOut", duration: 0.25 }}
+            transition={{ ease: "easeOut", duration: 0.3 }}
           />
         </div>
         <span

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import ensMarket from "/subframe-ens-market.webp";
 import aiWallet from "/subframe-ai-wallet.webp";
 import aiChat   from "/subframe-ai-chat.webp";
@@ -57,7 +58,6 @@ function AnimCard({ img, alt, tint = "rgba(203,255,77,0.04)" }: {
     >
       <style>{SHARED_STYLES}</style>
 
-      {/* Main image with slow parallax */}
       <img
         src={img}
         alt={alt}
@@ -65,19 +65,16 @@ function AnimCard({ img, alt, tint = "rgba(203,255,77,0.04)" }: {
         style={{ animation: "parallax-drift 14s ease-in-out infinite" }}
       />
 
-      {/* Green tint overlay */}
       <div
         className="absolute inset-0"
         style={{ background: tint, mixBlendMode: "screen" }}
       />
 
-      {/* Scanline effect */}
       <div
         className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#CBFF4D] to-transparent pointer-events-none"
         style={{ top: 0, animation: "scanline-move 5s linear infinite" }}
       />
 
-      {/* Vignette */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -86,7 +83,6 @@ function AnimCard({ img, alt, tint = "rgba(203,255,77,0.04)" }: {
         }}
       />
 
-      {/* Floating particles (dust) */}
       {PARTICLES.map((p, i) => (
         <div
           key={i}
@@ -100,16 +96,60 @@ function AnimCard({ img, alt, tint = "rgba(203,255,77,0.04)" }: {
         />
       ))}
 
-      {/* Bottom fade to black */}
       <div
         className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }}
       />
 
-      {/* Top fade */}
       <div
         className="absolute top-0 left-0 right-0 h-8 pointer-events-none"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4), transparent)" }}
+      />
+    </div>
+  );
+}
+
+function LazyVideo({ src, className }: { src: string; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (visible && videoRef.current) {
+      videoRef.current.load();
+      videoRef.current.play().catch(() => {});
+    }
+  }, [visible]);
+
+  return (
+    <div ref={containerRef} className="absolute inset-0">
+      <video
+        ref={videoRef}
+        src={visible ? src : undefined}
+        preload="none"
+        autoPlay={visible}
+        loop
+        muted
+        playsInline
+        controlsList="nodownload"
+        className={className}
       />
     </div>
   );
@@ -122,13 +162,8 @@ export function EnsMarketplaceAnim() {
 export function EnsVideoAnim() {
   return (
     <div className="relative w-full h-full overflow-hidden rounded-2xl bg-black">
-      <video
+      <LazyVideo
         src="/subframe-ens-identity.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        controlsList="nodownload"
         className="absolute inset-0 w-full h-full object-cover"
       />
     </div>
@@ -138,13 +173,8 @@ export function EnsVideoAnim() {
 export function AiWalletVideoAnim() {
   return (
     <div className="relative w-full h-full overflow-hidden rounded-2xl bg-black">
-      <video
+      <LazyVideo
         src="/subframe-ai-wallet.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        controlsList="nodownload"
         className="absolute inset-0 w-full h-full object-cover"
       />
     </div>
@@ -162,13 +192,8 @@ export function AiChatAnim() {
 export function AiChatVideoAnim() {
   return (
     <div className="relative w-full h-full overflow-hidden rounded-2xl bg-black">
-      <video
+      <LazyVideo
         src="/subframe-ai-chat.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        controlsList="nodownload"
         className="absolute inset-0 w-full h-full object-cover"
       />
     </div>
