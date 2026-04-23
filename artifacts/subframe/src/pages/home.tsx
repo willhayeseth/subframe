@@ -107,7 +107,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
   const short = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
   return (
     <ScrollCard index={i}>
-      <Link href={`/profile/${subdomain.name}`}>
+      <a href={`https://subframe.eth.limo/${subdomain.name}`} target="_blank" rel="noopener noreferrer">
         <div className="group p-6 rounded-2xl card-dark card-dark-hover cursor-pointer transition-all duration-300">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-sm font-black text-white/70 shrink-0">
@@ -128,7 +128,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
             View profile <ChevronRight className="w-3.5 h-3.5" />
           </div>
         </div>
-      </Link>
+      </a>
     </ScrollCard>
   );
 }
