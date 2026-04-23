@@ -91,16 +91,10 @@ subframe/
 Create a `.env` file in the `backend/` directory:
 
 ```env
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-SESSION_SECRET=your-session-secret-here
 ETH_RPC_URL=https://mainnet.infura.io/v3/your-key
-ENS_PRIVATE_KEY=0xyour-backend-wallet-private-key
 ETHERSCAN_API_KEY=your-etherscan-api-key
-PINATA_JWT=your-pinata-jwt-token
 OPENAI_API_KEY=your-openai-api-key
 VITE_REOWN_PROJECT_ID=your-reown-project-id
-GITHUB_APP_ID=your-github-app-id
-GITHUB_APP_PRIVATE_KEY=your-pem-key-content
 ```
 
 ### Install and Run
