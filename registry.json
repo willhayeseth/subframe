@@ -1,6 +1,6 @@
 {
-  "updated": "2026-04-22T18:57:06.969Z",
-  "count": 6,
+  "updated": "2026-04-23T05:59:14.597Z",
+  "count": 7,
   "members": [
     {
       "name": "vitalik",
@@ -36,6 +36,13 @@
       "walletAddress": "0x4576e3Ae3Ae1a2224A72eA4Be61881f0aCb39086",
       "ipfsCid": "bafybeigvs5sy57m23ya63opxfxt6vqayrc5t2whdkerrebqsexxeg2ji7i",
       "linkedAt": "2026-04-22T11:08:47.872Z"
+    },
+    {
+      "name": "testaudit999",
+      "ensFullName": "testaudit999.subframe.eth",
+      "walletAddress": "0x1234567890123456789012345678901234567890",
+      "ipfsCid": "bafybeibsuwxgapgzs2rrl2dzb36i4qemvwryezl7j3oj7moqaze3bqvplq",
+      "linkedAt": "2026-04-23T05:59:14.193Z"
     },
     {
       "name": "hayes",
