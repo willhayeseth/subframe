@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Brain, Bot, User, Send,
   ExternalLink, Copy, CheckCircle, Tag, Lightbulb, Zap,
-  Terminal, Globe, Hash, ArrowUpRight
+  Terminal, Globe, Hash, ArrowUpRight, MessageSquare, Repeat2, X, ChevronRight
 } from "lucide-react";
 import { SubframeNetworkMap } from "../components/network-map";
 import {
@@ -330,6 +330,8 @@ const riskColor = {
 export default function Profile() {
   const { name } = useParams<{ name: string }>();
   const [copied, setCopied] = useState(false);
+  const [csModal, setCsModal] = useState<"messages" | "copytrade" | null>(null);
+  const [ctAmount, setCtAmount] = useState<string>("0.1");
 
   const { data: subdomainRaw, isLoading: subLoading } = useGetSubdomainByName(name, {
     query: {
@@ -412,6 +414,80 @@ export default function Profile() {
 
   return (
     <div className="flex-1 bg-[#0C0C0C]">
+      {/* Coming Soon Modal */}
+      <AnimatePresence>
+        {csModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setCsModal(null)}>
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#111] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/30 to-transparent" />
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center">
+                      {csModal === "messages"
+                        ? <MessageSquare className="w-5 h-5 text-[#CBFF4D]" />
+                        : <Repeat2 className="w-5 h-5 text-[#CBFF4D]" />}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-white">
+                        {csModal === "messages" ? "Messages" : "Copy Trade"}
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#CBFF4D]/15 text-[#CBFF4D] border border-[#CBFF4D]/25 uppercase tracking-wider">
+                        Coming Soon
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setCsModal(null)} className="text-white/30 hover:text-white transition-colors mt-0.5">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {csModal === "messages" ? (
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Send on-chain encrypted messages to this wallet. Powered by XMTP protocol, messages are stored decentrally and readable only by the recipient.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-white/40 leading-relaxed mb-4">
+                      Auto-mirror every trade this wallet makes. Choose your position size and we handle execution.
+                    </p>
+                    <div className="flex gap-2 mb-4">
+                      {["0.1", "0.3", "0.5"].map(amt => (
+                        <button
+                          key={amt}
+                          onClick={() => setCtAmount(amt)}
+                          className={`flex-1 py-2.5 rounded-xl border text-sm font-black font-mono transition-all ${
+                            ctAmount === amt
+                              ? "border-[#CBFF4D]/40 bg-[#CBFF4D]/10 text-[#CBFF4D]"
+                              : "border-white/10 bg-white/[0.03] text-white/40 hover:border-white/20"
+                          }`}
+                        >
+                          {amt} ETH
+                        </button>
+                      ))}
+                    </div>
+                    <button className="w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.07] text-white/25 text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed">
+                      <Repeat2 className="w-4 h-4" />
+                      Start Copy Trade
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    <p className="text-[10px] text-white/20 text-center mt-3">Feature launching soon. Join waitlist via X.</p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-screen-xl mx-auto px-4 sm:px-5 py-6 sm:py-10">
         <div className="grid lg:grid-cols-[1fr_1fr] gap-8 items-start">
 
@@ -530,6 +606,29 @@ export default function Profile() {
                   </div>
                 )}
               </div>
+            </motion.div>
+
+            {/* Action Buttons: Messages + Copy Trade */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.08 }}
+              className="flex gap-3"
+            >
+              <button
+                onClick={() => setCsModal("messages")}
+                className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl border border-white/[0.08] bg-[#0e0e0e] hover:border-[#CBFF4D]/25 hover:bg-[#CBFF4D]/[0.04] transition-all group"
+              >
+                <MessageSquare className="w-4 h-4 text-white/35 group-hover:text-[#CBFF4D] transition-colors" />
+                <span className="text-sm font-bold text-white/50 group-hover:text-white transition-colors">Messages</span>
+              </button>
+              <button
+                onClick={() => setCsModal("copytrade")}
+                className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl border border-white/[0.08] bg-[#0e0e0e] hover:border-[#CBFF4D]/25 hover:bg-[#CBFF4D]/[0.04] transition-all group"
+              >
+                <Repeat2 className="w-4 h-4 text-white/35 group-hover:text-[#CBFF4D] transition-colors" />
+                <span className="text-sm font-bold text-white/50 group-hover:text-white transition-colors">Copy Trade</span>
+              </button>
             </motion.div>
 
             {/* Registration Log — hidden once all backend steps are done */}
@@ -702,7 +801,7 @@ export default function Profile() {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="shrink-0 h-[260px]"
+              className="shrink-0 h-[390px]"
             >
               <SubframeNetworkMap
                 subdomains={allSubdomains ?? []}

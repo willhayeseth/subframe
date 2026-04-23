@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowUpRight, Menu, X, LogOut, User } from "lucide-react";
+import { ArrowUpRight, Menu, X, LogOut, User, MessageSquare, Repeat2, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAccount, useDisconnect } from "wagmi";
 import { useListSubdomains } from "@workspace/api-client-react";
@@ -31,6 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
 
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
@@ -72,6 +74,46 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col overflow-x-hidden selection:bg-[#CBFF4D]/30">
+      {/* Inbox Coming Soon Modal */}
+      <AnimatePresence>
+        {inboxOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setInboxOpen(false)}>
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#111] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/30 to-transparent" />
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5 text-[#CBFF4D]" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-white">Inbox</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#CBFF4D]/15 text-[#CBFF4D] border border-[#CBFF4D]/25 uppercase tracking-wider">
+                        Coming Soon
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setInboxOpen(false)} className="text-white/30 hover:text-white transition-colors mt-0.5">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Receive on-chain encrypted messages from other Subframe users. Powered by XMTP, all messages are stored decentrally and visible only to you.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
@@ -139,6 +181,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     {userSubdomain.name}.subframe.eth
                   </button>
                 </Link>
+                <button
+                  onClick={() => setInboxOpen(true)}
+                  className="w-9 h-9 rounded-full border border-white/12 flex items-center justify-center text-white/40 hover:text-[#CBFF4D] hover:border-[#CBFF4D]/30 transition-all"
+                  title="Inbox"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => { disconnect(); sessionStorage.removeItem("sf_connected"); }}
                   className="w-9 h-9 rounded-full border border-white/12 flex items-center justify-center text-white/40 hover:text-red-400 hover:border-red-400/30 transition-all"

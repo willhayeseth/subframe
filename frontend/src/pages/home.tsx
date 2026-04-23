@@ -1,16 +1,13 @@
-import { useRef, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link } from "wouter";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowRight, ChevronRight } from "lucide-react";
 import { useGetSubdomainStats, useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 
-import brainHeart from "/3d-brain-heart.webp";
-import identityCard from "/3d-identity-card.webp";
-import ethCrystal from "/3d-eth-crystal.webp";
-import aiBrain from "/3d-ai-brain.webp";
-import analyzePng from "/3d-analyze.webp";
-import planetPng from "/3d-planet.webp";
+import ctaAsset from "/subframe-cta-asset.webp";
+import identityCard from "/subframe-hero-card.webp";
+import { EnsVideoAnim, AiWalletVideoAnim, AiChatVideoAnim } from "@/components/feature-animations";
 
 function Marquee({ items, reverse = false }: { items: string[]; reverse?: boolean }) {
   const doubled = [...items, ...items, ...items];
@@ -30,23 +27,28 @@ function Marquee({ items, reverse = false }: { items: string[]; reverse?: boolea
   );
 }
 
-function ScrollCard({ children, index }: { children: ReactNode; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end center"],
-  });
-  const y = useTransform(scrollYProgress, [0, 0.4], [110, 0]);
-  const opacity = useTransform(scrollYProgress, [0, 0.35], [0, 1]);
-  const scale = useTransform(scrollYProgress, [0, 0.4], [0.88, 1]);
-  const blur = useTransform(scrollYProgress, [0, 0.35], [10, 0]);
-  const blurStr = useTransform(blur, (v) => `blur(${v}px)`);
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.13, delayChildren: 0.05 } },
+};
+const textItem = {
+  hidden: { opacity: 0, y: 55, scale: 0.88 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] } },
+};
+const mediaItem = {
+  hidden: { opacity: 0, scale: 0.72, filter: "blur(16px)" },
+  visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] } },
+};
 
+function ScrollCard({ children, index }: { children: ReactNode; index: number }) {
   return (
     <motion.div
-      ref={ref}
-      style={{ y, opacity, scale, filter: blurStr }}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.08 }}
+      variants={containerVariants}
       className="w-full"
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
     </motion.div>
@@ -54,47 +56,50 @@ function ScrollCard({ children, index }: { children: ReactNode; index: number })
 }
 
 function FeatureBlock({
-  number, title, titleAccent, desc, img, imgAlt, reverse, delay, ctaLabel, ctaHref,
+  number, title, titleAccent, desc, animation, reverse, ctaLabel, ctaHref,
 }: {
   number: string; title: string; titleAccent?: string; desc: string;
-  img: string; imgAlt: string; reverse?: boolean; delay?: number;
+  animation: ReactNode; reverse?: boolean;
   ctaLabel: string; ctaHref: string;
 }) {
   return (
-    <ScrollCard index={parseInt(number)}>
-      <div
-        className={`relative flex flex-col ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-16 py-16 lg:py-24`}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-mono text-white/30 mb-5 tracking-wider">/ {number}</div>
-          <h2 className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.0] tracking-tight text-white mb-6">
-            {title}{" "}
-            {titleAccent && <span className="highlight-lime">{titleAccent}</span>}
-          </h2>
-          <p className="text-lg text-white/50 leading-relaxed max-w-lg mb-8">{desc}</p>
-          <div className="flex items-center gap-4">
-            <Link href={ctaHref}>
-              <button className="flex items-center gap-2 px-7 py-3.5 btn-lime text-base font-black">
-                {ctaLabel}
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="relative w-full lg:w-[420px] shrink-0 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-3xl bg-[#161616] border border-white/5" />
-          <div className="relative w-64 h-64 lg:w-80 lg:h-80">
-            <div className="absolute inset-0 rounded-full bg-[#CBFF4D]/5 blur-3xl" />
-            <img
-              src={img}
-              alt={imgAlt}
-              className="w-full h-full object-contain drop-shadow-2xl animate-float"
-            />
-          </div>
-        </div>
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.08 }}
+      variants={containerVariants}
+      className={`relative flex flex-col ${reverse ? "lg:flex-row-reverse" : "lg:flex-row"} items-center gap-8 lg:gap-16 py-16 lg:py-24`}
+    >
+      <div className="flex-1 min-w-0">
+        <motion.div variants={textItem} className="text-sm font-mono text-white/30 mb-5 tracking-wider">
+          / {number}
+        </motion.div>
+        <motion.h2
+          variants={textItem}
+          className="text-5xl md:text-6xl xl:text-7xl font-black leading-[1.0] tracking-tight text-white mb-6"
+        >
+          {title}{" "}
+          {titleAccent && <span className="highlight-lime">{titleAccent}</span>}
+        </motion.h2>
+        <motion.p variants={textItem} className="text-lg text-white/50 leading-relaxed max-w-lg mb-8">
+          {desc}
+        </motion.p>
+        <motion.div variants={textItem} className="flex items-center gap-4">
+          <Link href={ctaHref}>
+            <button className="flex items-center gap-2 px-7 py-3.5 btn-lime text-base font-black">
+              {ctaLabel}
+              <ArrowUpRight className="w-5 h-5" />
+            </button>
+          </Link>
+        </motion.div>
       </div>
-    </ScrollCard>
+
+      <motion.div variants={mediaItem} className="relative w-full lg:w-[560px] shrink-0">
+        <div className="w-full h-[300px] lg:h-[360px] rounded-3xl overflow-hidden border border-white/8 shadow-2xl shadow-black/60">
+          {animation}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -107,7 +112,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
   const short = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
   return (
     <ScrollCard index={i}>
-      <Link href={`/profile/${subdomain.name}`}>
+      <a href={`https://subframe.eth.limo/${subdomain.name}`} target="_blank" rel="noopener noreferrer">
         <div className="group p-6 rounded-2xl card-dark card-dark-hover cursor-pointer transition-all duration-300">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-sm font-black text-white/70 shrink-0">
@@ -128,7 +133,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
             View profile <ChevronRight className="w-3.5 h-3.5" />
           </div>
         </div>
-      </Link>
+      </a>
     </ScrollCard>
   );
 }
@@ -140,97 +145,150 @@ export default function Home() {
   const { data: stats } = useGetSubdomainStats();
   const { data: subdomains } = useListSubdomains();
 
+  useEffect(() => {
+    const html = document.documentElement;
+    html.style.scrollSnapType = "y mandatory";
+    html.style.overscrollBehaviorY = "none";
+    return () => {
+      html.style.scrollSnapType = "";
+      html.style.overscrollBehaviorY = "";
+    };
+  }, []);
+
   return (
     <div className="flex flex-col bg-[#0C0C0C] min-h-screen">
       {/* ─── HERO ─── */}
-      <section className="relative min-h-[100svh] flex flex-col justify-center overflow-hidden px-5 md:px-10 pt-10 pb-20">
-        <div className="absolute top-10 right-[4%] w-56 h-56 md:w-80 md:h-80 pointer-events-none select-none z-10 animate-float">
-          <img src={identityCard} alt="3D digital identity card" className="w-full h-full object-contain drop-shadow-2xl" />
-        </div>
-        <div className="absolute bottom-[8%] left-[1%] w-40 h-40 md:w-56 md:h-56 pointer-events-none select-none opacity-85 z-0"
-          style={{ animation: "float 7s ease-in-out infinite 1.5s" }}>
-          <img src={brainHeart} alt="3D brain heart" className="w-full h-full object-contain drop-shadow-2xl" />
-        </div>
+      <section
+        className="relative flex items-start overflow-hidden px-5 md:px-10 lg:px-16 pt-20 lg:pt-32 pb-16"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
+        <div className="relative z-20 max-w-7xl mx-auto w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10 lg:gap-8">
 
-        <div className="relative z-20 max-w-7xl mx-auto w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="tag-pill inline-flex mb-8"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
-            Protocol live on Ethereum
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.7 }}
-            className="text-6xl sm:text-7xl md:text-8xl xl:text-[110px] font-black leading-[0.95] tracking-tighter text-white mb-6"
-          >
-            Claim{" "}
-            <span className="highlight-lime">your</span>
-            <br />
-            Web3{" "}
-            <span className="highlight-lime">identity</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.6 }}
-            className="text-lg md:text-xl text-white/45 max-w-xl leading-relaxed mb-12"
-          >
-            Get your permanent{" "}
-            <span className="font-mono text-white/70">name.subframe.eth</span> subdomain with AI-powered profile, IPFS hosting, and on-chain AI chat.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.5 }}
-            className="flex flex-wrap items-center gap-4"
-          >
-            <a href="https://github.com/willhayeseth/subframe" target="_blank" rel="noopener noreferrer">
-              <button
-                data-testid="btn-docs"
-                className="flex items-center gap-2 px-8 py-4 btn-lime text-base font-black rounded-full"
-              >
-                Documentation
-                <ArrowUpRight className="w-5 h-5" />
-              </button>
-            </a>
-            <Link href="/explore">
-              <button
-                data-testid="btn-explore"
-                className="flex items-center gap-2 px-8 py-4 btn-outline-lime text-base rounded-full"
-              >
-                Browse Registry
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </Link>
-          </motion.div>
-
-          {stats && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.55 }}
-              className="flex flex-wrap gap-10 mt-16 pt-10 border-t border-white/8"
+          {/* ── Left: text ── */}
+          <div className="flex-1 min-w-0">
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, duration: 0.7 }}
+              className="text-[44px] sm:text-8xl md:text-9xl xl:text-[116px] font-black leading-[0.92] tracking-tighter text-white mb-6"
             >
-              {[
-                { v: stats.totalSubdomains, l: "Claimed" },
-                { v: stats.activeSubdomains, l: "Active" },
-                { v: stats.linkedToIPFS, l: "IPFS Live" },
-              ].map((s) => (
-                <div key={s.l}>
-                  <div className="text-4xl font-black font-mono text-[#CBFF4D]">{s.v}</div>
-                  <div className="text-xs text-white/35 mt-1 uppercase tracking-widest">{s.l}</div>
-                </div>
-              ))}
+              Claim{" "}
+              <span className="highlight-lime">your</span>
+              <br />
+              Web3{" "}
+              <span className="highlight-lime">identity</span>
+            </motion.h1>
+
+            {/* Video on mobile only — appears right after headline */}
+            <div className="block lg:hidden w-full rounded-2xl overflow-hidden mb-6">
+              <video
+                src="/subframe-hero.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                controlsList="nodownload"
+                disablePictureInPicture
+                className="w-full h-auto object-cover pointer-events-none select-none"
+              />
+            </div>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="text-lg md:text-xl text-white/45 max-w-xl leading-relaxed mb-10"
+            >
+              Get your permanent{" "}
+              <span className="font-mono text-white/70">name.subframe.eth</span> subdomain with AI-powered profile, IPFS hosting, and on-chain AI chat.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+              className="flex flex-wrap items-center gap-4"
+            >
+              <a href="https://github.com/willhayeseth/subframe" target="_blank" rel="noopener noreferrer">
+                <button
+                  data-testid="btn-docs"
+                  className="flex items-center gap-2 px-8 py-4 btn-lime text-base font-black rounded-full"
+                >
+                  Documentation
+                  <ArrowUpRight className="w-5 h-5" />
+                </button>
+              </a>
+              <Link href="/explore">
+                <button
+                  data-testid="btn-explore"
+                  className="flex items-center gap-2 px-8 py-4 btn-outline-lime text-base rounded-full"
+                >
+                  Browse Registry
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </Link>
             </motion.div>
-          )}
+
+            {/* Stats on mobile only */}
+            {stats && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.55 }}
+                className="flex lg:hidden flex-wrap gap-8 mt-8 pt-6 border-t border-white/8"
+              >
+                {[
+                  { v: stats.totalSubdomains, l: "Claimed" },
+                  { v: stats.activeSubdomains, l: "Active" },
+                  { v: stats.linkedToIPFS, l: "IPFS Live" },
+                ].map((s) => (
+                  <div key={s.l}>
+                    <div className="text-3xl font-black font-mono text-[#CBFF4D]">{s.v}</div>
+                    <div className="text-xs text-white/35 mt-1 uppercase tracking-widest">{s.l}</div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </div>
+
+          {/* ── Right: visuals (desktop only) ── */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="hidden lg:flex flex-col justify-center gap-4 w-[460px] shrink-0"
+          >
+            {/* Hero video */}
+            <div className="w-full rounded-2xl overflow-hidden">
+              <video
+                src="/subframe-hero.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                controlsList="nodownload"
+                disablePictureInPicture
+                className="w-full h-auto object-cover pointer-events-none select-none"
+              />
+            </div>
+
+            {/* Stats horizontal */}
+            {stats && (
+              <div className="flex items-center gap-8 pt-4 border-t border-white/8">
+                {[
+                  { v: stats.totalSubdomains, l: "Claimed" },
+                  { v: stats.activeSubdomains, l: "Active" },
+                  { v: stats.linkedToIPFS, l: "IPFS Live" },
+                ].map((s) => (
+                  <div key={s.l}>
+                    <div className="text-3xl font-black font-mono text-[#CBFF4D] leading-none">{s.v}</div>
+                    <div className="text-[10px] text-white/35 mt-1 uppercase tracking-widest">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
         </div>
       </section>
 
@@ -241,14 +299,16 @@ export default function Home() {
       </div>
 
       {/* ─── FEATURES ─── */}
-      <section className="px-5 md:px-10 max-w-7xl mx-auto w-full">
+      <section
+        className="px-5 md:px-10 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
         <FeatureBlock
           number="01"
           title="Own your name on"
           titleAccent="Ethereum"
           desc="Register name.subframe.eth permanently. Your ENS subdomain is yours forever, stored on-chain, pointing to your IPFS profile automatically."
-          img={ethCrystal}
-          imgAlt="Ethereum crystal 3D"
+          animation={<EnsVideoAnim />}
           ctaLabel="Explore ENS Identity"
           ctaHref="/ens-identity"
         />
@@ -260,8 +320,7 @@ export default function Home() {
           title="AI that knows your"
           titleAccent="wallet"
           desc="Deep AI analysis of your entire on-chain history. Activity type, risk level, key insights, token holdings, all in seconds."
-          img={aiBrain}
-          imgAlt="AI brain 3D"
+          animation={<AiWalletVideoAnim />}
           reverse
           ctaLabel="See How It Works"
           ctaHref="/ai-analysis"
@@ -274,8 +333,7 @@ export default function Home() {
           title="Chat with your"
           titleAccent="on-chain data"
           desc="An AI assistant with full context of your wallet. Ask about your history, analyze your positions, and get smart guidance."
-          img={analyzePng}
-          imgAlt="3D analyze"
+          animation={<AiChatVideoAnim />}
           ctaLabel="Discover AI Chat"
           ctaHref="/ai-chat"
         />
@@ -283,8 +341,17 @@ export default function Home() {
 
 
       {/* ─── REGISTRY ─── */}
-      <section className="px-5 md:px-10 py-20 md:py-32 max-w-7xl mx-auto w-full">
-        <div className="flex items-end justify-between gap-4 mb-14">
+      <section
+        className="px-5 md:px-10 py-20 md:py-32 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-end justify-between gap-4 mb-14"
+        >
           <div>
             <div className="text-sm font-mono text-white/30 mb-4 tracking-wider">/ 04</div>
             <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-tight">
@@ -301,7 +368,7 @@ export default function Home() {
               <ArrowUpRight className="w-4 h-4" />
             </button>
           </Link>
-        </div>
+        </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {(stats?.recentClaims ?? subdomains ?? []).slice(0, 6).map((s, i) => (
@@ -322,12 +389,22 @@ export default function Home() {
       </div>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="px-5 md:px-10 py-20 md:py-32 max-w-7xl mx-auto w-full">
-        <div className="text-sm font-mono text-white/30 mb-6 tracking-wider">/ 05</div>
-        <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-tight mb-16">
-          Live in{" "}
-          <span className="highlight-lime">3 steps</span>
-        </h2>
+      <section
+        className="px-5 md:px-10 py-20 md:py-32 max-w-7xl mx-auto w-full min-h-screen flex flex-col justify-center"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="text-sm font-mono text-white/30 mb-6 tracking-wider">/ 05</div>
+          <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-tight mb-16">
+            Live in{" "}
+            <span className="highlight-lime">3 steps</span>
+          </h2>
+        </motion.div>
 
         <div className="relative">
           <div className="hidden lg:block absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-[#CBFF4D]/30 via-[#CBFF4D]/10 to-transparent" />
@@ -366,11 +443,14 @@ export default function Home() {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="px-5 md:px-10 pb-24">
+      <section
+        className="px-5 md:px-10 pb-24 min-h-screen flex flex-col justify-center"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
         <ScrollCard index={0}>
           <div className="relative max-w-7xl mx-auto rounded-3xl overflow-hidden bg-[#CBFF4D] p-12 md:p-20 flex flex-col md:flex-row items-center justify-between gap-10">
-            <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none opacity-90 hidden md:flex items-center">
-              <img src={planetPng} alt="3D planet" className="w-full object-contain drop-shadow-2xl animate-float" />
+            <div className="absolute right-0 top-0 bottom-0 w-72 pointer-events-none opacity-95 hidden md:flex items-center">
+              <img src={identityCard} alt="identity card" className="w-full object-contain drop-shadow-2xl animate-float" />
             </div>
 
             <div className="relative z-10">
