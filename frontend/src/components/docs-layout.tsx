@@ -54,6 +54,13 @@ export const DOC_SECTIONS: { title: string; pages: DocPage[] }[] = [
     ],
   },
   {
+    title: "ART PROTOCOL",
+    pages: [
+      { id: "art-protocol", path: "/docs/art-protocol", label: "Art Protocol", icon: Layers, section: "ART PROTOCOL" },
+      { id: "art-trading", path: "/docs/art-trading", label: "Trading and Fees", icon: BarChart2, section: "ART PROTOCOL" },
+    ],
+  },
+  {
     title: "DEVELOPERS",
     pages: [
       { id: "api-reference", path: "/docs/api", label: "API Reference", icon: Code2, section: "DEVELOPERS" },
