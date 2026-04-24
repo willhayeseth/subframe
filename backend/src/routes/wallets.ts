@@ -7,7 +7,7 @@ import { mainnet } from "viem/chains";
 
 const router = Router();
 
-const ETHERSCAN_API = "https://api.etherscan.io/api";
+const ETHERSCAN_API = "https://api.etherscan.io/v2/api";
 const ETH_PRICE_API = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd";
 const ETHERSCAN_KEY = process.env["ETHERSCAN_API_KEY"] ?? "";
 
@@ -27,7 +27,7 @@ async function ensToAddress(ensName: string): Promise<string | null> {
 }
 
 function etherscanUrl(params: Record<string, string>): string {
-  const p = new URLSearchParams(params);
+  const p = new URLSearchParams({ chainid: "1", ...params });
   if (ETHERSCAN_KEY) p.set("apikey", ETHERSCAN_KEY);
   return `${ETHERSCAN_API}?${p.toString()}`;
 }
