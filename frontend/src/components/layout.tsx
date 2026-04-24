@@ -30,10 +30,7 @@ function TelegramIcon({ className }: { className?: string }) {
   );
 }
 
-const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/explore", label: "Registry" },
-];
+const navItems: { href: string; label: string }[] = [];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
