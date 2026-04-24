@@ -43,6 +43,7 @@ function Router() {
   if (isEnsDomain) {
     return (
       <Switch>
+        <Route path="/" component={withLayout(Home)} />
         <Route path="/:name" component={StandaloneProfile} />
         <Route component={NotFound} />
       </Switch>
