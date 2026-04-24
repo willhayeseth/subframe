@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, ExternalLink, Layers, Globe } from "lucide-react";
+import { useLocation } from "wouter";
 import { useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 import { SubframeNetworkMap } from "../components/network-map";
@@ -36,10 +37,16 @@ function openProfile(name: string) {
 
 export default function Explore() {
   const { data: subdomains, isLoading } = useListSubdomains();
+  const [, navigate] = useLocation();
   const [view, setView] = useState<"identities" | "art">("identities");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "linked" | "active" | "pending">("all");
   const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  function goToProfile(creatorEns: string) {
+    const name = creatorEns.replace(".subframe.eth", "").replace(".eth", "");
+    navigate(`/${name}`);
+  }
 
   const filtered = (subdomains ?? []).filter((s: Subdomain) => {
     const q = search.toLowerCase();
@@ -67,7 +74,7 @@ export default function Explore() {
         </div>
 
         {/* RIGHT: list */}
-        <div className="flex flex-col w-full lg:w-[400px] xl:w-[440px] shrink-0 border-l border-white/[0.05]">
+        <div className="flex flex-col w-full lg:w-[400px] xl:w-[440px] shrink-0 border-l border-white/[0.05] h-full overflow-hidden">
           {/* Header + filters */}
           <div className="px-5 pt-5 pb-3 border-b border-white/[0.05] shrink-0">
             <div className="flex items-center justify-between mb-4">
@@ -135,7 +142,7 @@ export default function Explore() {
           </div>
 
           {/* Scrollable list */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
           {view === "art" && (
             <div className="p-4 grid grid-cols-2 gap-3">
               {MOCK_ART.map((item, i) => (
@@ -151,6 +158,7 @@ export default function Explore() {
                     name={item.name}
                     mintPrice={item.mintPrice}
                     editions={item.editions}
+                    onClick={() => goToProfile(item.creator)}
                   />
                 </motion.div>
               ))}
