@@ -306,7 +306,7 @@ export default function Home() {
               >
                 {[
                   { v: stats.totalSubdomains, l: "Subdomains" },
-                  { v: stats.activeSubdomains, l: "Active" },
+                  { v: stats.linkedToIPFS, l: "Active" },
                   { v: 0, l: "Art" },
                 ].map((s) => (
                   <div key={s.l}>
@@ -344,7 +344,7 @@ export default function Home() {
               <div className="flex items-center gap-8 pt-4 border-t border-white/8">
                 {[
                   { v: stats.totalSubdomains, l: "Subdomains" },
-                  { v: stats.activeSubdomains, l: "Active" },
+                  { v: stats.linkedToIPFS, l: "Active" },
                   { v: 0, l: "Art" },
                 ].map((s) => (
                   <div key={s.l}>
