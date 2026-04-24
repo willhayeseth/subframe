@@ -132,7 +132,7 @@ jobs:
   deploy-ipfs-ens:
     name: Pin to IPFS & Update ENS
     runs-on: ubuntu-latest
-    needs: deploy-pages
+    needs: typecheck
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     concurrency:
       group: ipfs-ens
