@@ -65,28 +65,61 @@ interface WalletSnapshot {
 const walletCache = new Map<string, WalletSnapshot>();
 const WALLET_CACHE_TTL = 5 * 60 * 1000;
 
+const pendingSnapshots = new Map<string, Promise<WalletSnapshot>>();
+
 async function fetchWalletSnapshot(address: string, knownEns: string | null): Promise<WalletSnapshot> {
   const key = address.toLowerCase();
   const cached = walletCache.get(key);
   if (cached && Date.now() - cached.fetchedAt < WALLET_CACHE_TTL) return cached;
 
-  const [balance, txCount, lastTxs, ensName] = await Promise.all([
-    getWalletBalance(address),
-    getTransactionCount(address),
-    getLastTransactions(address),
-    knownEns ? Promise.resolve(knownEns) : resolveEnsName(address),
-  ]);
+  const existing = pendingSnapshots.get(key);
+  if (existing) return existing;
 
-  const snapshot: WalletSnapshot = { balance, txCount, lastTxs, ensName, fetchedAt: Date.now() };
-  walletCache.set(key, snapshot);
-  return snapshot;
+  const promise = (async (): Promise<WalletSnapshot> => {
+    const doFetch = async (): Promise<WalletSnapshot> => {
+      const [balance, txCount, lastTxs, ensName] = await Promise.all([
+        getWalletBalance(address),
+        getTransactionCount(address),
+        getLastTransactions(address),
+        knownEns ? Promise.resolve(knownEns) : resolveEnsName(address),
+      ]);
+      return { balance, txCount, lastTxs, ensName, fetchedAt: Date.now() };
+    };
+
+    let snapshot: WalletSnapshot;
+    try {
+      snapshot = await doFetch();
+    } catch (err) {
+      if (err instanceof Error && err.message === "etherscan_rate_limit") {
+        await new Promise((r) => setTimeout(r, 2500));
+        snapshot = await doFetch();
+      } else {
+        throw err;
+      }
+    }
+    walletCache.set(key, snapshot);
+    pendingSnapshots.delete(key);
+    return snapshot;
+  })();
+
+  pendingSnapshots.set(key, promise);
+  return promise;
+}
+
+function isRateLimitResult(result: string | undefined): boolean {
+  if (!result) return false;
+  const r = result.toLowerCase();
+  return r.includes("rate limit") || r.includes("max rate") || r.includes("notok");
 }
 
 async function getWalletBalance(address: string): Promise<string> {
+  const url = etherscanUrl({ module: "account", action: "balance", address, tag: "latest" });
+  const res = await fetch(url);
+  const data = await res.json() as { result?: string; status?: string };
+  if (isRateLimitResult(data?.result) || (data?.status === "0" && isRateLimitResult(data?.result))) {
+    throw new Error("etherscan_rate_limit");
+  }
   try {
-    const url = etherscanUrl({ module: "account", action: "balance", address, tag: "latest" });
-    const res = await fetch(url);
-    const data = await res.json() as { result?: string };
     const weiBalance = BigInt(data?.result ?? "0");
     const ethBalance = Number(weiBalance) / 1e18;
     return ethBalance.toFixed(4);
@@ -96,15 +129,12 @@ async function getWalletBalance(address: string): Promise<string> {
 }
 
 async function getTransactionCount(address: string): Promise<number> {
-  try {
-    const url = etherscanUrl({ module: "proxy", action: "eth_getTransactionCount", address, tag: "latest" });
-    const res = await fetch(url);
-    const data = await res.json() as { result?: string };
-    const n = parseInt(data?.result ?? "0x0", 16);
-    return isNaN(n) ? 0 : n;
-  } catch {
-    return 0;
-  }
+  const url = etherscanUrl({ module: "proxy", action: "eth_getTransactionCount", address, tag: "latest" });
+  const res = await fetch(url);
+  const data = await res.json() as { result?: string };
+  if (isRateLimitResult(data?.result)) throw new Error("etherscan_rate_limit");
+  const n = parseInt(data?.result ?? "0x0", 16);
+  return isNaN(n) ? 0 : n;
 }
 
 async function getLastTransactions(address: string): Promise<Array<{
