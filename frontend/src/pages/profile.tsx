@@ -1463,7 +1463,9 @@ export function StandaloneProfile() {
                 <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
                 AI Chat
               </h2>
-              <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
+              <div className="h-[480px]">
+                <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
+              </div>
             </motion.div>
           )}
 
