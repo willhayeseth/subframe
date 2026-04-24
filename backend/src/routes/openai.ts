@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, conversations, messages } from "@workspace/db";
-import OpenAI from "openai";
-const openai = new OpenAI({ apiKey: process.env["OPENAI_API_KEY"] });
+import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   CreateOpenaiConversationBody,
   SendOpenaiMessageBody,
