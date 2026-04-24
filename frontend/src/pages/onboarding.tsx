@@ -85,14 +85,22 @@ export default function Onboarding() {
 
   const { isSuccess: nameConfirmed, isLoading: nameWaiting } = useWaitForTransactionReceipt({ hash: nameTxHash });
   const [done, setDone] = useState(false);
+  const [txTimeout, setTxTimeout] = useState(false);
 
   useEffect(() => {
     if (nameConfirmed && !done) {
       setDone(true);
       qc.invalidateQueries({ queryKey: getGetSubdomainByNameQueryKey(name ?? "") });
-      setTimeout(() => setLocation(`/profile/${name}`), 1200);
+      setTimeout(() => setLocation(`/profile/${name}`), 800);
     }
   }, [nameConfirmed, done, name, setLocation, qc]);
+
+  // Fallback: if receipt confirmation is stuck, show "Continue" after 18s
+  useEffect(() => {
+    if (!nameTxHash || done) return;
+    const t = setTimeout(() => setTxTimeout(true), 18000);
+    return () => clearTimeout(t);
+  }, [nameTxHash, done]);
 
   const handleSetName = () => {
     if (!sub) return;
@@ -217,21 +225,38 @@ export default function Onboarding() {
                 </p>
               )}
 
-              <button
-                onClick={handleSetName}
-                disabled={busy}
-                className="w-full flex items-center justify-center gap-2 py-3.5 btn-lime rounded-xl text-sm font-black text-black disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {nameSigning
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />Waiting for wallet...</>
-                  : nameWaiting
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />Confirming on-chain...</>
-                  : <><CheckCircle className="w-4 h-4" />Set as Primary Name</>}
-              </button>
+              {txTimeout ? (
+                <>
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[#CBFF4D]/5 border border-[#CBFF4D]/15">
+                    <CheckCircle className="w-3.5 h-3.5 text-[#CBFF4D]/60 shrink-0" />
+                    <span className="text-xs text-white/50 font-mono">
+                      Transaction sent — <a href={`https://etherscan.io/tx/${nameTxHash}`} target="_blank" rel="noopener noreferrer" className="text-[#CBFF4D]/60 hover:text-[#CBFF4D] underline underline-offset-2">view on Etherscan</a>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setLocation(`/profile/${name}`)}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 btn-lime rounded-xl text-sm font-black text-black"
+                  >
+                    <CheckCircle className="w-4 h-4" />Continue to Profile
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleSetName}
+                  disabled={busy}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 btn-lime rounded-xl text-sm font-black text-black disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {nameSigning
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Waiting for wallet...</>
+                    : nameWaiting
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Confirming on-chain...</>
+                    : <><CheckCircle className="w-4 h-4" />Set as Primary Name</>}
+                </button>
+              )}
 
               <button
                 onClick={handleSkip}
-                disabled={busy}
+                disabled={busy && !txTimeout}
                 className="w-full mt-3 text-xs text-white/25 hover:text-white/50 transition-colors disabled:opacity-30"
               >
                 Skip for now, go to profile

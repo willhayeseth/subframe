@@ -962,49 +962,29 @@ export default function Profile() {
               </motion.div>
             )}
 
-            {/* Primary Name CTA — only for own profile when registration complete */}
-            {showPrimaryNameCta && (
+            {/* Primary Name CTA — only for own profile, only when not yet set */}
+            {showPrimaryNameCta && !primaryNameAlreadySet && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.1 }}
-                className={`rounded-xl border p-4 flex items-center gap-3 ${
-                  primaryNameAlreadySet
-                    ? "border-white/[0.06] bg-white/[0.02]"
-                    : "border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.03]"
-                }`}
+                className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.03] p-4 flex items-center gap-3"
               >
-                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  primaryNameAlreadySet ? "bg-white/[0.05]" : "bg-[#CBFF4D]/10"
-                }`}>
-                  {primaryNameAlreadySet
-                    ? <CheckCircle className="w-4 h-4 text-[#CBFF4D]/60" />
-                    : <Zap className="w-4 h-4 text-[#CBFF4D] fill-[#CBFF4D]" />
-                  }
+                <div className="shrink-0 w-8 h-8 rounded-full bg-[#CBFF4D]/10 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-[#CBFF4D] fill-[#CBFF4D]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-bold leading-snug ${primaryNameAlreadySet ? "text-white/40" : "text-white"}`}>
-                    {primaryNameAlreadySet ? "Primary ENS Name Set" : "Set as Primary ENS Name"}
-                  </p>
+                  <p className="text-xs font-bold text-white leading-snug">Set as Primary ENS Name</p>
                   <p className="text-xs text-white/25 mt-0.5 leading-snug">
-                    {primaryNameAlreadySet
-                      ? <><span className="font-mono text-[#CBFF4D]/40">{subdomain.ensFullName}</span> appears on Etherscan</>
-                      : <>Make <span className="font-mono text-[#CBFF4D]/60">{subdomain.ensFullName}</span> appear on Etherscan</>
-                    }
+                    Make <span className="font-mono text-[#CBFF4D]/60">{subdomain.ensFullName}</span> appear on Etherscan
                   </p>
                 </div>
-                {primaryNameAlreadySet ? (
-                  <span className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-white/20 border border-white/[0.06] cursor-default">
-                    Complete
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => setLocation(`/onboarding/${subdomain.name}`)}
-                    className="shrink-0 px-3 py-1.5 btn-lime rounded-lg text-xs font-bold text-black"
-                  >
-                    Set now
-                  </button>
-                )}
+                <button
+                  onClick={() => setLocation(`/onboarding/${subdomain.name}`)}
+                  className="shrink-0 px-3 py-1.5 btn-lime rounded-lg text-xs font-bold text-black"
+                >
+                  Set now
+                </button>
               </motion.div>
             )}
 
