@@ -2,12 +2,29 @@ import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { GetWalletDataParams, AnalyzeWalletParams } from "@workspace/api-zod";
 import { walletLimiter, aiLimiter } from "../lib/rateLimit";
+import { createPublicClient, http } from "viem";
+import { mainnet } from "viem/chains";
 
 const router = Router();
 
 const ETHERSCAN_API = "https://api.etherscan.io/api";
 const ETH_PRICE_API = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd";
 const ETHERSCAN_KEY = process.env["ETHERSCAN_API_KEY"] ?? "";
+
+const publicClient = createPublicClient({
+  chain: mainnet,
+  transport: http(process.env["ETH_RPC_URL"] ?? "https://eth.drpc.org"),
+});
+
+async function ensToAddress(ensName: string): Promise<string | null> {
+  try {
+    const normalized = ensName.toLowerCase().trim() as `${string}.eth`;
+    const address = await publicClient.getEnsAddress({ name: normalized });
+    return address ?? null;
+  } catch {
+    return null;
+  }
+}
 
 function etherscanUrl(params: Record<string, string>): string {
   const p = new URLSearchParams(params);
@@ -55,7 +72,8 @@ async function getTransactionCount(address: string): Promise<number> {
     const url = etherscanUrl({ module: "proxy", action: "eth_getTransactionCount", address, tag: "latest" });
     const res = await fetch(url);
     const data = await res.json() as { result?: string };
-    return parseInt(data?.result ?? "0x0", 16);
+    const n = parseInt(data?.result ?? "0x0", 16);
+    return isNaN(n) ? 0 : n;
   } catch {
     return 0;
   }
@@ -124,19 +142,32 @@ router.get("/wallets/:address", walletLimiter, async (req, res) => {
     return;
   }
 
-  const { address } = parsed.data;
+  const { address: rawAddress } = parsed.data;
 
-  if (!/^0x[0-9a-fA-F]{40}$/.test(address) && !address.endsWith(".eth")) {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(rawAddress) && !rawAddress.endsWith(".eth")) {
     res.status(400).json({ error: "Invalid Ethereum address or ENS name" });
     return;
   }
 
   try {
-    const [balance, txCount, lastTxs, ensName, ethPrice] = await Promise.all([
+    let address = rawAddress;
+    let inputEnsName: string | null = null;
+
+    if (rawAddress.endsWith(".eth")) {
+      inputEnsName = rawAddress;
+      const resolved = await ensToAddress(rawAddress);
+      if (!resolved) {
+        res.status(404).json({ error: `ENS name ${rawAddress} could not be resolved to an address` });
+        return;
+      }
+      address = resolved;
+    }
+
+    const [balance, txCount, lastTxs, reverseEnsName, ethPrice] = await Promise.all([
       getWalletBalance(address),
       getTransactionCount(address),
       getLastTransactions(address),
-      resolveEnsName(address),
+      inputEnsName ? Promise.resolve(inputEnsName) : resolveEnsName(address),
       getEthPrice(),
     ]);
 
@@ -146,7 +177,7 @@ router.get("/wallets/:address", walletLimiter, async (req, res) => {
 
     res.json({
       address,
-      ensName,
+      ensName: reverseEnsName,
       balanceEth: balance,
       balanceUsd,
       txCount,
@@ -169,14 +200,27 @@ router.get("/wallets/:address/analyze", walletLimiter, aiLimiter, async (req, re
     return;
   }
 
-  const { address } = parsed.data;
+  const { address: rawAddress2 } = parsed.data;
 
   try {
+    let address = rawAddress2;
+    let inputEnsName2: string | null = null;
+
+    if (rawAddress2.endsWith(".eth")) {
+      inputEnsName2 = rawAddress2;
+      const resolved = await ensToAddress(rawAddress2);
+      if (!resolved) {
+        res.status(404).json({ error: `ENS name ${rawAddress2} could not be resolved to an address` });
+        return;
+      }
+      address = resolved;
+    }
+
     const [balance, txCount, lastTxs, ensName] = await Promise.all([
       getWalletBalance(address),
       getTransactionCount(address),
       getLastTransactions(address),
-      resolveEnsName(address),
+      inputEnsName2 ? Promise.resolve(inputEnsName2) : resolveEnsName(address),
     ]);
 
     const txSummary = lastTxs

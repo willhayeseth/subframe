@@ -341,7 +341,8 @@ export default function Analyze() {
 
         {walletError && (
           <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm">
-            Could not fetch wallet data. Check that the address is valid.
+            {(walletError as { response?: { data?: { error?: string } } }).response?.data?.error
+              ?? "Could not fetch wallet data. Check that the address or ENS name is valid."}
           </div>
         )}
 
