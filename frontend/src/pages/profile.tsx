@@ -102,15 +102,13 @@ function buildSteps(subdomain: Subdomain): RegStep[] {
       label: "Identity active on-chain",
       state: isLinked ? "done" : "pending",
     },
-    {
+    ...(ts === "deployed" || ts === "deploying" ? [{
       label: ts === "deployed"
         ? `Art Token deployed: $${subdomain.tokenSymbol ?? "..."}`
-        : ts === "failed"
-          ? "Art Token deployment failed"
-          : "Art Token minting on bonding curve",
+        : "Art Token minting on bonding curve",
       txHash: subdomain.tokenDeployTxHash,
-      state: ts === "deployed" ? "done" : ts === "deploying" ? "waiting" : ts === "failed" ? "done" : "pending",
-    },
+      state: ts === "deployed" ? "done" as const : "waiting" as const,
+    }] : []),
   ];
 }
 
@@ -354,7 +352,24 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
     setTimeout(() => setCopiedAddr(null), 2000);
   };
 
-  if (ts === "none") return null;
+  if (ts === "none" || ts === "failed") {
+    return (
+      <div className="rounded-xl border border-white/[0.05] bg-[#080808] overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
+          <Coins className="w-3.5 h-3.5 text-white/20" />
+          <span className="text-xs font-mono text-white/20 uppercase tracking-wider">Art Token</span>
+          <div className="ml-auto flex items-center gap-1.5 font-mono text-xs text-white/20">
+            <span>coming soon</span>
+          </div>
+        </div>
+        <div className="p-4">
+          <p className="text-xs text-white/20 font-mono">
+            Art Protocol token minting will be available soon for this subdomain.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-[#CBFF4D]/15 bg-[#080808] overflow-hidden">
@@ -368,15 +383,10 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
               <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D]" />
               <span className="text-[#CBFF4D]/70">live on bonding curve</span>
             </>
-          ) : ts === "deploying" ? (
+          ) : (
             <>
               <Loader2 className="w-3 h-3 text-amber-400/60 animate-spin" />
               <span className="text-amber-400/70">deploying</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="w-3 h-3 text-red-400/60" />
-              <span className="text-red-400/70">failed</span>
             </>
           )}
         </div>
@@ -472,11 +482,6 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
           </>
         )}
 
-        {ts === "failed" && (
-          <p className="text-xs text-red-400/60 font-mono">
-            Token deployment encountered an error. The ENS subdomain is still active.
-          </p>
-        )}
       </div>
     </div>
   );
