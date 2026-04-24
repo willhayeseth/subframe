@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, inArray } from "drizzle-orm";
 import { db, subdomainsTable } from "@workspace/db";
 import {
   CreateSubdomainBody,
@@ -9,10 +9,11 @@ import {
   CheckSubdomainAvailabilityParams,
   UpdateSubdomainParams,
 } from "@workspace/api-zod";
-import { uploadProfileToIPFS, uploadParentAppToIPFS } from "../lib/ipfs";
-import { registerSubdomainOnChain, fixContenthash, transferSubdomainOwnership, setParentContenthash } from "../lib/ens";
-import { claimLimiter } from "../lib/rateLimit";
-import { pushRegistryUpdate } from "../lib/github";
+import { uploadProfileToIPFS, uploadParentAppToIPFS } from "../lib/ipfs.js";
+import { registerSubdomainOnChain, fixContenthash, transferSubdomainOwnership, setParentContenthash } from "../lib/ens.js";
+import { claimLimiter } from "../lib/rateLimit.js";
+import { pushRegistryUpdate } from "../lib/github.js";
+import { deployArtToken, buildTokenMeta } from "../lib/token.js";
 
 const router = Router();
 
@@ -115,10 +116,19 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
           .set({ ipfsCid: cid, status: "active", updatedAt: new Date() })
           .where(eq(subdomainsTable.id, subdomain.id));
 
-        // Register on ENS after IPFS is ready
-        console.log(`[CLAIM] Step 2/3: Registering on ENS (backend wallet must control subframe.eth)...`);
-        try {
-          const ens = await registerSubdomainOnChain(cleanName, walletAddress, cid, async (step, txHash) => {
+        // Run ENS registration and Art Token deployment in parallel
+        console.log(`[CLAIM] Step 2/3: Starting ENS registration + Art Token deployment in parallel...`);
+
+        const { tokenName, tokenSymbol } = buildTokenMeta(cleanName);
+
+        await db
+          .update(subdomainsTable)
+          .set({ tokenStatus: "deploying", tokenName, tokenSymbol, updatedAt: new Date() })
+          .where(eq(subdomainsTable.id, subdomain.id));
+
+        const [ensResult, tokenResult] = await Promise.allSettled([
+          // ENS registration
+          registerSubdomainOnChain(cleanName, walletAddress, cid, async (step, txHash) => {
             console.log(`[CLAIM] ENS Step ${step} confirmed: ${txHash}`);
             if (step === 1) {
               await db.update(subdomainsTable).set({ ensTx1Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.id, subdomain.id));
@@ -127,19 +137,44 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
             } else if (step === 3) {
               await db.update(subdomainsTable).set({ ensTx3Hash: txHash, updatedAt: new Date() }).where(eq(subdomainsTable.id, subdomain.id));
             } else {
-              // Step 4: ownership transferred to user — now officially linked
               await db.update(subdomainsTable).set({ ensTx4Hash: txHash, status: "linked", updatedAt: new Date() }).where(eq(subdomainsTable.id, subdomain.id));
               afterRegistrationComplete(cleanName).catch(() => void 0);
             }
-          });
-          if (ens) {
-            console.log(`[CLAIM] ENS complete: ${cleanName}.subframe.eth is live on-chain`);
-            console.log(`[CLAIM] eth.limo URL → https://${cleanName}.subframe.eth.limo`);
-          } else {
-            console.error(`[CLAIM] ENS SKIPPED: registerSubdomainOnChain returned null. ENS_PRIVATE_KEY wallet likely does not control subframe.eth`);
-          }
-        } catch (ensErr) {
-          console.error("[CLAIM] ENS FAILED:", ensErr);
+          }),
+          // Art Token deployment
+          deployArtToken({
+            subdomainName: cleanName,
+            creatorWallet: walletAddress as `0x${string}`,
+            tokenName,
+            tokenSymbol,
+          }),
+        ]);
+
+        if (ensResult.status === "fulfilled" && ensResult.value) {
+          console.log(`[CLAIM] ENS complete: ${cleanName}.subframe.eth is live on-chain`);
+        } else if (ensResult.status === "rejected") {
+          console.error("[CLAIM] ENS FAILED:", ensResult.reason);
+        } else {
+          console.error(`[CLAIM] ENS SKIPPED: wallet may not control subframe.eth`);
+        }
+
+        if (tokenResult.status === "fulfilled") {
+          const { tokenAddress, tokenTxHash, pairAddress, liquidityTxHash } = tokenResult.value;
+          await db.update(subdomainsTable).set({
+            tokenStatus: "deployed",
+            tokenAddress,
+            tokenDeployTxHash: tokenTxHash,
+            uniswapPairAddress: pairAddress,
+            uniswapLiquidityTxHash: liquidityTxHash,
+            updatedAt: new Date(),
+          }).where(eq(subdomainsTable.id, subdomain.id));
+          console.log(`[CLAIM] Art Token deployed: ${tokenAddress} (pair: ${pairAddress})`);
+        } else {
+          console.error("[CLAIM] Art Token deployment FAILED:", tokenResult.reason);
+          await db.update(subdomainsTable).set({
+            tokenStatus: "failed",
+            updatedAt: new Date(),
+          }).where(eq(subdomainsTable.id, subdomain.id));
         }
       } catch (err) {
         console.error("[CLAIM] Background processing failed:", err);
@@ -489,6 +524,27 @@ router.post("/subdomains/:name/set-ens-step", async (req, res) => {
    If `cid` is provided in the body, skip the IPFS upload step.
    Otherwise uploads a redirect SPA page to IPFS first.
    Backend wallet pays all gas. Idempotent. */
+router.delete("/admin/subdomains", async (req, res) => {
+  try {
+    const adminKey = process.env["ADMIN_KEY"];
+    if (adminKey && req.headers["x-admin-key"] !== adminKey) {
+      return void res.status(401).json({ error: "Unauthorized" });
+    }
+    const { ids } = req.body as { ids?: number[] };
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return void res.status(400).json({ error: "ids array required" });
+    }
+    const deleted = await db
+      .delete(subdomainsTable)
+      .where(inArray(subdomainsTable.id, ids))
+      .returning({ id: subdomainsTable.id, name: subdomainsTable.name });
+    res.json({ deleted, count: deleted.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete subdomains");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/admin/set-parent-contenthash", async (req, res) => {
   try {
     const adminKey = process.env["ADMIN_KEY"];
