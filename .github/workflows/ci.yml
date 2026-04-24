@@ -117,6 +117,9 @@ jobs:
           BASE_PATH: /
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://subframe-api.replit.app' }}
 
+      - name: Create 404.html for SPA routing
+        run: cp frontend/dist/public/index.html frontend/dist/public/404.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
