@@ -128,13 +128,13 @@ function AnalysisCard({ analysis }: { analysis: WalletAnalysis }) {
 function AiChat({ address, walletData, analysis }: { address: string; walletData?: WalletData; analysis?: WalletAnalysis }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [convId, setConvId] = useState<string | null>(null);
+  const [convId, setConvId] = useState<number | null>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const { mutateAsync: createConv } = useCreateOpenaiConversation();
-  const { data: messages } = useListOpenaiMessages(convId ?? "", {
-    query: { enabled: !!convId, queryKey: getListOpenaiMessagesQueryKey(convId ?? "") },
+  const createConv = useCreateOpenaiConversation();
+  const { data: messages } = useListOpenaiMessages(convId ?? 0, {
+    query: { enabled: !!convId, queryKey: getListOpenaiMessagesQueryKey(convId ?? 0) },
   });
 
   useEffect(() => {
@@ -155,8 +155,10 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
         const p: string[] = [`You are an expert Web3 on-chain analyst. The user is analyzing wallet: ${address}`];
         if (walletData) { p.push(`Balance: ${walletData.balanceEth} ETH`); p.push(`TXs: ${walletData.txCount}`); if (walletData.ensName) p.push(`ENS: ${walletData.ensName}`); }
         if (analysis) { p.push(`AI Summary: ${analysis.summary}`); p.push(`Activity Type: ${analysis.activityType}`); p.push(`Risk: ${analysis.riskLevel}`); }
-        const conv = await createConv({ body: { systemPrompt: p.join(". "), title: `Wallet Analysis: ${address}` } });
-        cId = conv.id;
+        const conv = await new Promise<typeof createConv.data>((res) => {
+          createConv.mutate({ data: { title: `Wallet: ${address.slice(0, 10)}...` } }, { onSuccess: res });
+        });
+        cId = conv!.id;
         setConvId(cId);
       }
 
@@ -169,17 +171,15 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
       if (!res.ok || !res.body) { setStreaming(false); return; }
 
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
       let done = false;
       while (!done) {
-        const { value, done: d } = await reader.read();
+        const { done: d } = await reader.read();
         done = d;
-        if (value) decoder.decode(value);
-        await queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(cId) });
+        await queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(cId!) });
       }
     } finally {
       setStreaming(false);
-      await queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(convId ?? "") });
+      await queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(convId ?? 0) });
     }
   };
 
