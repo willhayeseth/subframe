@@ -39,6 +39,7 @@ const navItems = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const isFullscreen = location.startsWith("/explore");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
 
@@ -81,7 +82,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [isConnected, address, userSubdomain?.name, allSubdomains]);
 
   return (
-    <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col overflow-x-hidden selection:bg-[#CBFF4D]/30">
+    <div className={cn(
+      "bg-[#0C0C0C] text-white flex flex-col selection:bg-[#CBFF4D]/30",
+      isFullscreen ? "h-screen overflow-hidden" : "min-h-screen overflow-x-hidden"
+    )}>
       {/* Inbox Coming Soon Modal */}
       <AnimatePresence>
         {inboxOpen && (
@@ -269,11 +273,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1 flex flex-col pt-[70px] relative z-0">
+      <main className={cn("flex-1 flex flex-col pt-[70px] relative z-0", isFullscreen && "overflow-hidden")}>
         {children}
       </main>
 
-      <footer className="border-t border-white/6 py-12 px-5 bg-[#0C0C0C]">
+      {!isFullscreen && <footer className="border-t border-white/6 py-12 px-5 bg-[#0C0C0C]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <img
@@ -288,7 +292,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/claim"><span className="hover:text-white cursor-pointer transition-colors">Claim</span></Link>
           </div>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }
