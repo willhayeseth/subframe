@@ -79,6 +79,7 @@ export function ArtCard({
         <button
           onClick={(e) => {
             e.stopPropagation();
+            onClick?.();
           }}
           className="w-full mt-1 py-2.5 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 text-[#CBFF4D] text-xs font-bold hover:bg-[#CBFF4D]/20 hover:border-[#CBFF4D]/40 transition-all"
         >
