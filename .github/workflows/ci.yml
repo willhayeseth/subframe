@@ -6,29 +6,33 @@ on:
   pull_request:
     branches: [main]
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
       - name: Build packages (required for project references)
         run: |
           pnpm exec tsc --build packages/db
           pnpm exec tsc --build packages/api-zod
           pnpm exec tsc --build packages/api-client-react
+
       - name: Type check all packages
         run: pnpm -r --if-present run typecheck
 
@@ -37,26 +41,35 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
       - name: Build packages
         run: |
           pnpm exec tsc --build packages/db
           pnpm exec tsc --build packages/api-zod
           pnpm exec tsc --build packages/api-client-react
+
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
         env:
           NODE_ENV: production
+          PORT: "3001"
           BASE_PATH: /
-          VITE_API_BASE_URL: https://subframedev.replit.app
+          VITE_API_BASE_URL: https://subframe.eth.limo
 
   deploy-pages:
     name: Deploy to GitHub Pages
@@ -69,59 +82,124 @@ jobs:
       id-token: write
     concurrency:
       group: pages
-      cancel-in-progress: false
+      cancel-in-progress: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
       - name: Build packages
         run: |
           pnpm exec tsc --build packages/db
           pnpm exec tsc --build packages/api-zod
           pnpm exec tsc --build packages/api-client-react
+
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
         env:
           NODE_ENV: production
+          PORT: "3001"
           BASE_PATH: /
-          VITE_API_BASE_URL: https://subframedev.replit.app
-          VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://subframe-api.replit.app' }}
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist/public
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-ipfs-ens:
+    name: Pin to IPFS & Update ENS
+    runs-on: ubuntu-latest
+    needs: deploy-pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    concurrency:
+      group: ipfs-ens
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm exec tsc --build packages/db
+          pnpm exec tsc --build packages/api-zod
+          pnpm exec tsc --build packages/api-client-react
+
+      - name: Build frontend
+        run: pnpm --filter @workspace/subframe exec vite build
+        env:
+          NODE_ENV: production
+          PORT: "3001"
+          BASE_PATH: /
+          VITE_API_BASE_URL: https://subframedev.replit.app
+
+      - name: Pin to IPFS & update ENS contenthash
+        run: node frontend/scripts/pin-to-ipfs.mjs
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          BACKEND_URL: https://subframedev.replit.app
 
   build-backend:
     name: Build Backend
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
       - name: Build packages
         run: |
           pnpm exec tsc --build packages/db
           pnpm exec tsc --build packages/api-zod
+
       - name: Build backend
         run: pnpm --filter @workspace/api-server run build
