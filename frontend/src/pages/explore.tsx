@@ -205,8 +205,20 @@ export default function Explore() {
                 onMouseLeave={() => setHighlighted(null)}
                 onClick={() => openProfile(s.name)}
               >
-                <div className="w-9 h-9 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center text-xs font-black text-[#CBFF4D] shrink-0">
-                  {s.name.slice(0, 2).toUpperCase()}
+                <div className="w-9 h-9 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center text-xs font-black text-[#CBFF4D] shrink-0 overflow-hidden">
+                  {s.avatarUrl ? (
+                    <img
+                      src={s.avatarUrl}
+                      alt={s.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        (e.currentTarget.parentElement as HTMLElement).textContent = s.name.slice(0, 2).toUpperCase();
+                      }}
+                    />
+                  ) : (
+                    s.name.slice(0, 2).toUpperCase()
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-mono font-bold text-white/90 text-sm group-hover:text-[#CBFF4D] transition-colors truncate">
