@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ArrowRight, ChevronRight, TrendingUp, Zap } from "lucide-react";
 import { useGetSubdomainStats, useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 
@@ -106,36 +106,59 @@ function FeatureBlock({
 }
 
 function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
-  const statusColors: Record<string, string> = {
-    linked: "bg-[#CBFF4D] text-black",
-    active: "bg-cyan-400 text-black",
-    pending: "bg-amber-400 text-black",
-  };
   const short = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
+  const hasToken = subdomain.tokenStatus === "deployed" && subdomain.tokenSymbol;
   return (
     <ScrollCard index={i}>
-      <a href={`https://subframe.eth.limo/${subdomain.name}`} target="_blank" rel="noopener noreferrer">
-        <div className="group p-6 rounded-2xl card-dark card-dark-hover cursor-pointer transition-all duration-300">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-sm font-black text-white/70 shrink-0">
-              {subdomain.name.slice(0, 2).toUpperCase()}
+      <Link href={`/profile/${subdomain.name}`}>
+        <div className="group p-5 rounded-2xl card-dark card-dark-hover cursor-pointer transition-all duration-300">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="relative shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/8 overflow-hidden flex items-center justify-center">
+                {subdomain.avatarUrl ? (
+                  <img src={subdomain.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-black text-white/50">
+                    {subdomain.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              {subdomain.status === "linked" && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#CBFF4D] border-2 border-[#111]" />
+              )}
             </div>
-            <span className={`text-xs px-3 py-1 rounded-full font-bold ${statusColors[subdomain.status] ?? statusColors.pending}`}>
-              {subdomain.status}
+            <div className="flex-1 min-w-0">
+              <div className="font-mono font-bold text-white text-sm group-hover:text-[#CBFF4D] transition-colors truncate">
+                {subdomain.ensFullName}
+              </div>
+              <div className="font-mono text-xs text-white/25 mt-0.5">{short(subdomain.walletAddress)}</div>
+            </div>
+          </div>
+
+          {subdomain.bio && (
+            <p className="text-xs text-white/40 mb-3 line-clamp-2 leading-relaxed">{subdomain.bio}</p>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            {hasToken ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#CBFF4D]/8 border border-[#CBFF4D]/15 text-[#CBFF4D] text-xs font-bold font-mono">
+                <TrendingUp className="w-3 h-3" />
+                ${subdomain.tokenSymbol}
+              </div>
+            ) : subdomain.tokenStatus === "deploying" ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/8 border border-amber-400/15 text-amber-400/70 text-xs font-mono">
+                <Zap className="w-3 h-3" />
+                token minting
+              </div>
+            ) : (
+              <div />
+            )}
+            <span className="flex items-center gap-1 text-xs text-white/25 group-hover:text-[#CBFF4D] transition-colors shrink-0">
+              Profile <ChevronRight className="w-3.5 h-3.5" />
             </span>
           </div>
-          <div className="font-mono font-bold text-white text-sm group-hover:text-[#CBFF4D] transition-colors mb-1 truncate">
-            {subdomain.ensFullName}
-          </div>
-          <div className="font-mono text-xs text-white/25">{short(subdomain.walletAddress)}</div>
-          {subdomain.bio && (
-            <p className="text-xs text-white/40 mt-3 line-clamp-2 leading-relaxed">{subdomain.bio}</p>
-          )}
-          <div className="flex items-center gap-1 mt-4 text-xs text-white/25 group-hover:text-[#CBFF4D] transition-colors">
-            View profile <ChevronRight className="w-3.5 h-3.5" />
-          </div>
         </div>
-      </a>
+      </Link>
     </ScrollCard>
   );
 }

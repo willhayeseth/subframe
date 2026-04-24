@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Brain, Bot, User, Send,
   ExternalLink, Copy, CheckCircle, Tag, Lightbulb, Zap,
-  Terminal, Globe, Hash, ArrowUpRight, MessageSquare, Repeat2, X, ChevronRight
+  Terminal, Globe, Hash, ArrowUpRight, MessageSquare, Repeat2, X, ChevronRight,
+  Coins, TrendingUp, AlertCircle
 } from "lucide-react";
 import { SubframeNetworkMap } from "../components/network-map";
 import {
@@ -23,13 +24,6 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Subdomain, WalletData, WalletAnalysis } from "@workspace/api-client-react";
-
-type SubdomainWithTx = Subdomain & {
-  ensTx1Hash?: string | null;
-  ensTx2Hash?: string | null;
-  ensTx3Hash?: string | null;
-  ensTx4Hash?: string | null;
-};
 
 function StatusBadge({ status }: { status: string }) {
   const c: Record<string, string> = {
@@ -55,7 +49,7 @@ interface RegStep {
   state: StepState;
 }
 
-function buildSteps(subdomain: SubdomainWithTx): RegStep[] {
+function buildSteps(subdomain: Subdomain): RegStep[] {
   const st = subdomain.status;
   const isActive = st === "active" || st === "linked";
   const isLinked = st === "linked";
@@ -63,6 +57,7 @@ function buildSteps(subdomain: SubdomainWithTx): RegStep[] {
   const tx2 = subdomain.ensTx2Hash;
   const tx3 = subdomain.ensTx3Hash;
   const tx4 = subdomain.ensTx4Hash;
+  const ts = subdomain.tokenStatus;
 
   return [
     {
@@ -103,6 +98,15 @@ function buildSteps(subdomain: SubdomainWithTx): RegStep[] {
       label: "Identity active on-chain",
       state: isLinked ? "done" : "pending",
     },
+    {
+      label: ts === "deployed"
+        ? `Art Token deployed: $${subdomain.tokenSymbol ?? "..."}`
+        : ts === "failed"
+          ? "Art Token deployment failed"
+          : "Art Token deploying on Uniswap V2",
+      txHash: subdomain.tokenDeployTxHash,
+      state: ts === "deployed" ? "done" : ts === "deploying" ? "waiting" : ts === "failed" ? "done" : "pending",
+    },
   ];
 }
 
@@ -121,7 +125,7 @@ function TxLink({ hash }: { hash: string }) {
   );
 }
 
-function RegistrationLog({ subdomain }: { subdomain: SubdomainWithTx }) {
+function RegistrationLog({ subdomain }: { subdomain: Subdomain }) {
   const steps = buildSteps(subdomain);
   const st = subdomain.status;
   const isLinked = st === "linked";
@@ -186,6 +190,160 @@ function RegistrationLog({ subdomain }: { subdomain: SubdomainWithTx }) {
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── art token card ────────────────────────────────────── */
+
+function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
+  const [copiedAddr, setCopiedAddr] = useState<"token" | "pair" | null>(null);
+  const ts = subdomain.tokenStatus;
+
+  const copy = (text: string, which: "token" | "pair") => {
+    navigator.clipboard.writeText(text);
+    setCopiedAddr(which);
+    setTimeout(() => setCopiedAddr(null), 2000);
+  };
+
+  if (ts === "none") return null;
+
+  const uniswapUrl = subdomain.tokenAddress
+    ? `https://app.uniswap.org/swap?outputCurrency=${subdomain.tokenAddress}&chain=mainnet`
+    : null;
+
+  return (
+    <div className="rounded-xl border border-[#CBFF4D]/15 bg-[#080808] overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/20 to-transparent" />
+      <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
+        <Coins className="w-3.5 h-3.5 text-[#CBFF4D]/60" />
+        <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Art Token</span>
+        <div className="ml-auto flex items-center gap-1.5 font-mono text-xs">
+          {ts === "deployed" ? (
+            <>
+              <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D]" />
+              <span className="text-[#CBFF4D]/70">live on Uniswap</span>
+            </>
+          ) : ts === "deploying" ? (
+            <>
+              <Loader2 className="w-3 h-3 text-amber-400/60 animate-spin" />
+              <span className="text-amber-400/70">deploying</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-3 h-3 text-red-400/60" />
+              <span className="text-red-400/70">failed</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {ts === "deploying" && (
+          <p className="text-xs text-white/30 font-mono">
+            Deploying ERC-20 contract and seeding Uniswap V2 liquidity pool...
+          </p>
+        )}
+
+        {ts === "deployed" && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-mono text-lg font-black text-[#CBFF4D]">
+                  ${subdomain.tokenSymbol ?? "..."}
+                </div>
+                <div className="text-xs text-white/30">{subdomain.tokenName ?? ""}</div>
+              </div>
+              {uniswapUrl && (
+                <a
+                  href={uniswapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 text-[#CBFF4D] text-xs font-bold hover:bg-[#CBFF4D]/20 transition-colors"
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  Trade
+                  <ArrowUpRight className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+
+            {subdomain.tokenAddress && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                  <div>
+                    <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Token</div>
+                    <span className="font-mono text-xs text-white/45 truncate">
+                      {subdomain.tokenAddress.slice(0, 18)}...{subdomain.tokenAddress.slice(-6)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => copy(subdomain.tokenAddress!, "token")}
+                      className="text-white/20 hover:text-[#CBFF4D] transition-colors"
+                    >
+                      {copiedAddr === "token" ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                    <a
+                      href={`https://etherscan.io/token/${subdomain.tokenAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white/20 hover:text-[#CBFF4D] transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+
+                {subdomain.uniswapPairAddress && (
+                  <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                    <div>
+                      <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Uniswap Pair</div>
+                      <span className="font-mono text-xs text-white/45 truncate">
+                        {subdomain.uniswapPairAddress.slice(0, 18)}...{subdomain.uniswapPairAddress.slice(-6)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => copy(subdomain.uniswapPairAddress!, "pair")}
+                        className="text-white/20 hover:text-[#CBFF4D] transition-colors"
+                      >
+                        {copiedAddr === "pair" ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                      <a
+                        href={`https://etherscan.io/address/${subdomain.uniswapPairAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/20 hover:text-[#CBFF4D] transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {subdomain.tokenDeployTxHash && (
+                  <a
+                    href={`https://etherscan.io/tx/${subdomain.tokenDeployTxHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[10px] font-mono text-white/20 hover:text-[#CBFF4D]/50 transition-colors"
+                  >
+                    Deploy tx: {subdomain.tokenDeployTxHash.slice(0, 16)}...
+                    <ArrowUpRight className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {ts === "failed" && (
+          <p className="text-xs text-red-400/60 font-mono">
+            Token deployment encountered an error. The ENS subdomain is still active.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -333,17 +491,17 @@ export default function Profile() {
   const [csModal, setCsModal] = useState<"messages" | "copytrade" | null>(null);
   const [ctAmount, setCtAmount] = useState<string>("0.1");
 
-  const { data: subdomainRaw, isLoading: subLoading } = useGetSubdomainByName(name, {
+  const { data: subdomain, isLoading: subLoading } = useGetSubdomainByName(name, {
     query: {
       enabled: !!name,
       queryKey: getGetSubdomainByNameQueryKey(name),
       refetchInterval: (query) => {
-        const data = query.state.data as SubdomainWithTx | undefined;
-        return data?.status !== "linked" ? 5000 : false;
+        const data = query.state.data as Subdomain | undefined;
+        const settled = data?.status === "linked" && data?.tokenStatus !== "deploying";
+        return settled ? false : 5000;
       },
     },
   });
-  const subdomain = subdomainRaw as SubdomainWithTx | undefined;
 
   const { data: allSubdomains } = useListSubdomains();
 
@@ -378,11 +536,11 @@ export default function Profile() {
   // Show CTA only on own profile when backend registration is done
   const showPrimaryNameCta = isOwnProfile && subdomain?.status === "linked";
 
-  // Hide the registration log once everything is completed (all 4 TXs confirmed by backend)
-  const sub = subdomain as SubdomainWithTx | undefined;
+  // Hide the registration log once all ENS + token steps are done
   const allBackendStepsDone = !!(
-    sub?.ensTx1Hash && sub?.ensTx2Hash && sub?.ensTx3Hash && sub?.ensTx4Hash
-    && sub?.status === "linked"
+    subdomain?.ensTx1Hash && subdomain?.ensTx2Hash && subdomain?.ensTx3Hash && subdomain?.ensTx4Hash
+    && subdomain?.status === "linked"
+    && subdomain?.tokenStatus !== "deploying"
   );
 
   const copyAddress = () => {
@@ -630,6 +788,17 @@ export default function Profile() {
                 <span className="text-sm font-bold text-white/50 group-hover:text-white transition-colors">Copy Trade</span>
               </button>
             </motion.div>
+
+            {/* Art Token Card */}
+            {subdomain.tokenStatus !== "none" && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.09 }}
+              >
+                <ArtTokenCard subdomain={subdomain} />
+              </motion.div>
+            )}
 
             {/* Registration Log — hidden once all backend steps are done */}
             {!allBackendStepsDone && (
@@ -891,17 +1060,17 @@ export function StandaloneProfile() {
   const { name } = useParams<{ name: string }>();
   const [copied, setCopied] = useState(false);
 
-  const { data: subdomainRaw, isLoading: subLoading } = useGetSubdomainByName(name, {
+  const { data: subdomain, isLoading: subLoading } = useGetSubdomainByName(name, {
     query: {
       enabled: !!name,
       queryKey: getGetSubdomainByNameQueryKey(name),
       refetchInterval: (query) => {
-        const data = query.state.data as SubdomainWithTx | undefined;
-        return data?.status !== "linked" ? 5000 : false;
+        const data = query.state.data as Subdomain | undefined;
+        const settled = data?.status === "linked" && data?.tokenStatus !== "deploying";
+        return settled ? false : 5000;
       },
     },
   });
-  const subdomain = subdomainRaw as SubdomainWithTx | undefined;
 
   const { data: walletData, isLoading: walletLoading } = useGetWalletData(
     subdomain?.walletAddress ?? "",
