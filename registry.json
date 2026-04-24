@@ -1,28 +1,7 @@
 {
-  "updated": "2026-04-23T05:59:14.597Z",
-  "count": 7,
+  "updated": "2026-04-24T10:05:01.459Z",
+  "count": 3,
   "members": [
-    {
-      "name": "vitalik",
-      "ensFullName": "vitalik.subframe.eth",
-      "walletAddress": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-      "ipfsCid": null,
-      "linkedAt": "2026-04-21T09:03:23.721Z"
-    },
-    {
-      "name": "defiwhale",
-      "ensFullName": "defiwhale.subframe.eth",
-      "walletAddress": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-      "ipfsCid": null,
-      "linkedAt": "2026-04-21T09:03:23.721Z"
-    },
-    {
-      "name": "cryptoninja",
-      "ensFullName": "cryptoninja.subframe.eth",
-      "walletAddress": "0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8",
-      "ipfsCid": null,
-      "linkedAt": "2026-04-21T09:03:23.721Z"
-    },
     {
       "name": "test",
       "ensFullName": "test.subframe.eth",
@@ -38,18 +17,11 @@
       "linkedAt": "2026-04-22T11:08:47.872Z"
     },
     {
-      "name": "testaudit999",
-      "ensFullName": "testaudit999.subframe.eth",
-      "walletAddress": "0x1234567890123456789012345678901234567890",
-      "ipfsCid": "bafybeibsuwxgapgzs2rrl2dzb36i4qemvwryezl7j3oj7moqaze3bqvplq",
-      "linkedAt": "2026-04-23T05:59:14.193Z"
-    },
-    {
-      "name": "hayes",
-      "ensFullName": "hayes.subframe.eth",
-      "walletAddress": "0x5bD267d548b165e47C13e4E95A91a2354F96401b",
-      "ipfsCid": "bafybeignv3w6auyu6ez25ve7wjf77pmk4fmoryl4tf3ustpzeg6jhw66hy",
-      "linkedAt": "2026-04-22T18:57:06.754Z"
+      "name": "you",
+      "ensFullName": "you.subframe.eth",
+      "walletAddress": "0xdFE4620b751C646fe553C8A91182882Dc1FA231a",
+      "ipfsCid": "bafybeih6yk6j4bftqqrxbll44cgvufvd32ktape6nm74gz3zejtztnkwpa",
+      "linkedAt": "2026-04-24T10:05:01.272Z"
     }
   ]
 }
