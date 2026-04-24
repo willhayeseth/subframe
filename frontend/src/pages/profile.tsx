@@ -649,7 +649,7 @@ export default function Profile() {
     { query: { enabled: !!walletData, queryKey: getAnalyzeWalletQueryKey(subdomain?.walletAddress ?? "") } }
   );
 
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress, isConnected } = useAccount();
   const [, setLocation] = useLocation();
 
   const isOwnProfile = !!(
@@ -657,6 +657,18 @@ export default function Profile() {
     subdomain?.walletAddress &&
     connectedAddress.toLowerCase() === subdomain.walletAddress.toLowerCase()
   );
+
+  useEffect(() => {
+    if (subLoading || !subdomain || isOwnProfile) return;
+    if (isConnected) {
+      window.location.href = `https://subframe.eth.limo/${subdomain.name}`;
+      return;
+    }
+    const t = setTimeout(() => {
+      if (!isOwnProfile) window.location.href = `https://subframe.eth.limo/${subdomain.name}`;
+    }, 1800);
+    return () => clearTimeout(t);
+  }, [subLoading, subdomain, isOwnProfile, isConnected]);
 
   // Check if connected wallet has already set this subdomain as its primary ENS name
   const { data: ensName } = useEnsName({
