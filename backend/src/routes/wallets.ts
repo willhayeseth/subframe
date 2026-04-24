@@ -54,6 +54,34 @@ async function resolveEnsName(address: string): Promise<string | null> {
   }
 }
 
+interface WalletSnapshot {
+  balance: string;
+  txCount: number;
+  lastTxs: Awaited<ReturnType<typeof getLastTransactions>>;
+  ensName: string | null;
+  fetchedAt: number;
+}
+
+const walletCache = new Map<string, WalletSnapshot>();
+const WALLET_CACHE_TTL = 5 * 60 * 1000;
+
+async function fetchWalletSnapshot(address: string, knownEns: string | null): Promise<WalletSnapshot> {
+  const key = address.toLowerCase();
+  const cached = walletCache.get(key);
+  if (cached && Date.now() - cached.fetchedAt < WALLET_CACHE_TTL) return cached;
+
+  const [balance, txCount, lastTxs, ensName] = await Promise.all([
+    getWalletBalance(address),
+    getTransactionCount(address),
+    getLastTransactions(address),
+    knownEns ? Promise.resolve(knownEns) : resolveEnsName(address),
+  ]);
+
+  const snapshot: WalletSnapshot = { balance, txCount, lastTxs, ensName, fetchedAt: Date.now() };
+  walletCache.set(key, snapshot);
+  return snapshot;
+}
+
 async function getWalletBalance(address: string): Promise<string> {
   try {
     const url = etherscanUrl({ module: "account", action: "balance", address, tag: "latest" });
@@ -163,27 +191,24 @@ router.get("/wallets/:address", walletLimiter, async (req, res) => {
       address = resolved;
     }
 
-    const [balance, txCount, lastTxs, reverseEnsName, ethPrice] = await Promise.all([
-      getWalletBalance(address),
-      getTransactionCount(address),
-      getLastTransactions(address),
-      inputEnsName ? Promise.resolve(inputEnsName) : resolveEnsName(address),
+    const [snap, ethPrice] = await Promise.all([
+      fetchWalletSnapshot(address, inputEnsName),
       getEthPrice(),
     ]);
 
     const balanceUsd = ethPrice > 0
-      ? (parseFloat(balance) * ethPrice).toFixed(2)
+      ? (parseFloat(snap.balance) * ethPrice).toFixed(2)
       : null;
 
     res.json({
       address,
-      ensName: reverseEnsName,
-      balanceEth: balance,
+      ensName: snap.ensName,
+      balanceEth: snap.balance,
       balanceUsd,
-      txCount,
-      lastTransactions: lastTxs,
-      firstSeen: lastTxs.length > 0
-        ? new Date(Math.min(...lastTxs.map((t) => t.timestamp * 1000))).toISOString()
+      txCount: snap.txCount,
+      lastTransactions: snap.lastTxs,
+      firstSeen: snap.lastTxs.length > 0
+        ? new Date(Math.min(...snap.lastTxs.map((t) => t.timestamp * 1000))).toISOString()
         : null,
       isContract: false,
     });
@@ -216,12 +241,8 @@ router.get("/wallets/:address/analyze", walletLimiter, aiLimiter, async (req, re
       address = resolved;
     }
 
-    const [balance, txCount, lastTxs, ensName] = await Promise.all([
-      getWalletBalance(address),
-      getTransactionCount(address),
-      getLastTransactions(address),
-      inputEnsName2 ? Promise.resolve(inputEnsName2) : resolveEnsName(address),
-    ]);
+    const snap = await fetchWalletSnapshot(address, inputEnsName2);
+    const { balance, txCount, lastTxs, ensName } = { balance: snap.balance, txCount: snap.txCount, lastTxs: snap.lastTxs, ensName: snap.ensName };
 
     const txSummary = lastTxs
       .map(
