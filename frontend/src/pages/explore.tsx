@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, ExternalLink, Layers, Globe } from "lucide-react";
-import { useLocation } from "wouter";
 import { useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 import { SubframeNetworkMap } from "../components/network-map";
@@ -37,16 +36,10 @@ function openProfile(name: string) {
 
 export default function Explore() {
   const { data: subdomains, isLoading } = useListSubdomains();
-  const [, navigate] = useLocation();
   const [view, setView] = useState<"identities" | "art">("identities");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "linked" | "active" | "pending">("all");
   const [highlighted, setHighlighted] = useState<string | null>(null);
-
-  function goToProfile(creatorEns: string) {
-    const name = creatorEns.replace(".subframe.eth", "").replace(".eth", "");
-    navigate(`/${name}`);
-  }
 
   const filtered = (subdomains ?? []).filter((s: Subdomain) => {
     const q = search.toLowerCase();
@@ -61,11 +54,11 @@ export default function Explore() {
   const short = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0C0C0C] overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+    <div className="flex-1 flex flex-col bg-[#0C0C0C] overflow-hidden">
       <div className="flex flex-1 min-h-0 gap-0">
 
-        {/* LEFT: full-height map */}
-        <div className={`${view === "identities" ? "hidden lg:flex" : "hidden"} flex-col flex-1 min-w-0 p-5 pr-2.5`}>
+        {/* LEFT: full-height map — always visible on desktop */}
+        <div className="hidden lg:flex flex-col flex-1 min-w-0 p-5 pr-2.5">
           <SubframeNetworkMap
             subdomains={subdomains ?? []}
             currentName={highlighted ?? ""}
@@ -103,6 +96,11 @@ export default function Explore() {
                 >
                   {v === "art" ? <Layers className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
                   {v}
+                  {v === "art" && (
+                    <span className="ml-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/25 uppercase tracking-wider leading-none">
+                      Soon
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -158,7 +156,6 @@ export default function Explore() {
                     name={item.name}
                     mintPrice={item.mintPrice}
                     editions={item.editions}
-                    onClick={() => goToProfile(item.creator)}
                   />
                 </motion.div>
               ))}
