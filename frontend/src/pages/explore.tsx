@@ -4,18 +4,6 @@ import { Search, ExternalLink, Layers, Globe } from "lucide-react";
 import { useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 import { SubframeNetworkMap } from "../components/network-map";
-import { ArtCard } from "@/components/art-card";
-
-const MOCK_ART = [
-  { id: 1, image: "/art/art1.png", creator: "vitalik.subframe.eth", name: "ETH Crystal", mintPrice: "0.0055", editions: 45 },
-  { id: 2, image: "/art/art2.png", creator: "hayes.subframe.eth", name: "Spiral Infinite", mintPrice: "0.0021", editions: 11 },
-  { id: 3, image: "/art/art3.png", creator: "cryptoninja.subframe.eth", name: "Neon City", mintPrice: "0.0089", editions: 79 },
-  { id: 4, image: "/art/art4.png", creator: "defiwhale.subframe.eth", name: "Glitch Protocol", mintPrice: "0.0031", editions: 21 },
-  { id: 5, image: "/art/art5.png", creator: "satoshi.subframe.eth", name: "Cosmic Jelly", mintPrice: "0.0201", editions: 191 },
-  { id: 6, image: "/art/art6.png", creator: "liquidmeta.subframe.eth", name: "Liquid Gold", mintPrice: "0.0058", editions: 48 },
-  { id: 7, image: "/art/art7.png", creator: "mandala.subframe.eth", name: "Sacred Geometry", mintPrice: "0.0074", editions: 64 },
-  { id: 8, image: "/art/art8.png", creator: "synth.subframe.eth", name: "Synthwave Horizon", mintPrice: "0.0033", editions: 23 },
-];
 
 function StatusBadge({ status }: { status: string }) {
   const c: Record<string, string> = {
@@ -152,23 +140,14 @@ export default function Explore() {
           {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto min-h-0">
           {view === "art" && (
-            <div className="p-4 grid grid-cols-2 gap-3">
-              {MOCK_ART.map((item, i) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                >
-                  <ArtCard
-                    image={item.image}
-                    creator={item.creator}
-                    name={item.name}
-                    mintPrice={item.mintPrice}
-                    editions={item.editions}
-                  />
-                </motion.div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-16 px-6 gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#CBFF4D]/8 border border-[#CBFF4D]/15 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-[#CBFF4D]/40" />
+              </div>
+              <div className="text-center">
+                <p className="text-white/40 text-sm font-semibold">Art Protocol Coming Soon</p>
+                <p className="text-white/20 text-xs mt-1">Claim your subdomain and upload art to be listed here.</p>
+              </div>
             </div>
           )}
           {view === "identities" && (
