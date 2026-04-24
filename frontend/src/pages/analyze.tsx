@@ -82,35 +82,40 @@ function AnalysisCard({ analysis }: { analysis: WalletAnalysis }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mb-4 text-sm font-medium text-white/80">
-        <Shield className="w-4 h-4 text-[#CBFF4D]/70" />
-        {analysis.activityType}
-      </div>
+      {analysis.activityType && (
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-4 h-4 text-white/30" />
+          <span className="font-semibold text-white/80">{analysis.activityType}</span>
+        </div>
+      )}
 
-      <div className="p-4 rounded-xl bg-white/[0.03] border border-white/6 mb-4">
-        <p className="text-sm text-white/65 leading-relaxed">{analysis.summary}</p>
-      </div>
+      {analysis.summary && (
+        <div className="p-4 rounded-xl bg-black/30 border border-white/5 text-sm text-white/60 leading-relaxed mb-4">
+          {analysis.summary}
+        </div>
+      )}
 
-      {analysis.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+      {analysis.tags && analysis.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-5">
           {analysis.tags.map((tag) => (
-            <span key={tag} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#CBFF4D]/8 border border-[#CBFF4D]/15 text-xs text-[#CBFF4D]/80">
-              <Tag className="w-3 h-3" /> {tag}
+            <span key={tag} className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-white/10 text-white/40">
+              <Tag className="w-3 h-3" />{tag}
             </span>
           ))}
         </div>
       )}
 
-      {analysis.insights.length > 0 && (
+      {analysis.insights && analysis.insights.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-white/30 uppercase tracking-wider">
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400" /> Key Insights
+          <div className="flex items-center gap-2 text-xs font-semibold text-white/25 uppercase tracking-wider mb-3">
+            <Lightbulb className="w-3.5 h-3.5 text-[#CBFF4D]/40" />
+            Key Insights
           </div>
           <ul className="space-y-2">
-            {analysis.insights.map((ins, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-white/60">
-                <span className="text-[#CBFF4D] mt-0.5 shrink-0">+</span>
-                {ins}
+            {analysis.insights.map((insight, i) => (
+              <li key={i} className="flex gap-3 text-sm text-white/50">
+                <span className="text-[#CBFF4D]/50 font-bold shrink-0 mt-0.5">+</span>
+                <span>{insight}</span>
               </li>
             ))}
           </ul>
@@ -122,119 +127,116 @@ function AnalysisCard({ analysis }: { analysis: WalletAnalysis }) {
 
 function AiChat({ address, walletData, analysis }: { address: string; walletData?: WalletData; analysis?: WalletAnalysis }) {
   const [input, setInput] = useState("");
-  const [convId, setConvId] = useState<number | null>(null);
   const [streaming, setStreaming] = useState(false);
-  const [streamContent, setStreamContent] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const qc = useQueryClient();
-  const createConv = useCreateOpenaiConversation();
-  const { data: messages } = useListOpenaiMessages(convId ?? 0, {
-    query: { enabled: !!convId, queryKey: getListOpenaiMessagesQueryKey(convId ?? 0), refetchInterval: false },
+  const [convId, setConvId] = useState<string | null>(null);
+  const msgsRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: createConv } = useCreateOpenaiConversation();
+  const { data: messages } = useListOpenaiMessages(convId ?? "", {
+    query: { enabled: !!convId, queryKey: getListOpenaiMessagesQueryKey(convId ?? "") },
   });
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamContent]);
-
-  const getCtx = () => {
-    const p = [`Wallet: ${address}`];
-    if (walletData) { p.push(`Balance: ${walletData.balanceEth} ETH`); p.push(`TXs: ${walletData.txCount}`); if (walletData.ensName) p.push(`ENS: ${walletData.ensName}`); }
-    if (analysis) { p.push(`Activity: ${analysis.activityType}`); p.push(`Risk: ${analysis.riskLevel}`); p.push(`Summary: ${analysis.summary}`); }
-    return p.join("\n");
-  };
+  useEffect(() => {
+    if (msgsRef.current) {
+      msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim() || streaming) return;
-    const content = input; setInput("");
-    let cId = convId;
-    if (!cId) {
-      const conv = await new Promise<typeof createConv.data>((resolve) => {
-        createConv.mutate({ data: { title: `Wallet: ${address.slice(0, 10)}...` } }, { onSuccess: resolve });
-      });
-      if (!conv) return;
-      cId = conv.id; setConvId(cId);
-    }
-    await qc.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(cId) });
-    setStreaming(true); setStreamContent("");
+    const userMsg = input.trim();
+    setInput("");
+    setStreaming(true);
+
     try {
-      const res = await fetch(`${getBaseUrl()}/api/openai/conversations/${cId}/messages`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, walletContext: getCtx() }),
-      });
-      const reader = res.body?.getReader();
-      if (!reader) return;
-      const dec = new TextDecoder();
-      let buf = ""; let full = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const parts = buf.split("\n\n"); buf = parts.pop() ?? "";
-        for (const part of parts) {
-          if (!part.startsWith("data: ")) continue;
-          try {
-            const j = JSON.parse(part.slice(6));
-            if (j.done) { setStreamContent(""); await qc.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(cId!) }); }
-            else if (j.content) { full += j.content; setStreamContent(full); }
-          } catch {}
-        }
+      let cId = convId;
+      if (!cId) {
+        const p: string[] = [`You are an expert Web3 on-chain analyst. The user is analyzing wallet: ${address}`];
+        if (walletData) { p.push(`Balance: ${walletData.balanceEth} ETH`); p.push(`TXs: ${walletData.txCount}`); if (walletData.ensName) p.push(`ENS: ${walletData.ensName}`); }
+        if (analysis) { p.push(`AI Summary: ${analysis.summary}`); p.push(`Activity Type: ${analysis.activityType}`); p.push(`Risk: ${analysis.riskLevel}`); }
+        const conv = await createConv({ body: { systemPrompt: p.join(". "), title: `Wallet Analysis: ${address}` } });
+        cId = conv.id;
+        setConvId(cId);
       }
-    } finally { setStreaming(false); }
+
+      const res = await fetch(`${getBaseUrl()}/api/openai/conversations/${cId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: userMsg }),
+      });
+
+      if (!res.ok || !res.body) { setStreaming(false); return; }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      while (!done) {
+        const { value, done: d } = await reader.read();
+        done = d;
+        if (value) decoder.decode(value);
+        await queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(cId) });
+      }
+    } finally {
+      setStreaming(false);
+      await queryClient.invalidateQueries({ queryKey: getListOpenaiMessagesQueryKey(convId ?? "") });
+    }
   };
 
-  const allMsgs = messages ?? [];
-
   return (
-    <div className="flex flex-col rounded-2xl border border-white/8 bg-white/[0.02] overflow-hidden" style={{ height: "420px" }}>
-      <div className="px-5 py-3.5 border-b border-white/6 flex items-center gap-2.5 bg-white/[0.02]">
+    <div className="relative rounded-2xl border border-white/8 bg-white/[0.02] overflow-hidden flex flex-col" style={{ height: 400 }}>
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/5">
         <div className="w-7 h-7 rounded-lg bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center">
-          <Bot className="w-4 h-4 text-[#CBFF4D]" />
+          <Sparkles className="w-3.5 h-3.5 text-[#CBFF4D]" />
         </div>
-        <span className="text-sm font-semibold text-white/80">AI Web3 Assistant</span>
-        <div className="ml-auto flex items-center gap-1.5 text-xs text-white/20">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Live
-        </div>
+        <span className="font-bold text-white text-sm">AI Web3 Assistant</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {allMsgs.length === 0 && !streaming && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <Sparkles className="w-8 h-8 text-[#CBFF4D]/20" />
-            <p className="text-sm text-white/25">Ask me anything about this wallet...</p>
+      <div ref={msgsRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        {(!messages || messages.length === 0) && (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <Bot className="w-8 h-8 text-white/10 mb-2" />
+            <p className="text-sm text-white/25">Ask anything about this wallet</p>
           </div>
         )}
-        {allMsgs.map((msg) => (
-          <div key={msg.id} className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${msg.role === "user" ? "bg-[#CBFF4D]/15" : "bg-white/5"}`}>
-              {msg.role === "user" ? <User className="w-3 h-3 text-[#CBFF4D]" /> : <Bot className="w-3 h-3 text-white/50" />}
-            </div>
-            <div className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === "user" ? "bg-[#CBFF4D]/10 text-white/90 border border-[#CBFF4D]/15 rounded-tr-sm" : "bg-white/[0.04] text-white/65 border border-white/6 rounded-tl-sm"}`}>
+        {messages?.map((msg) => (
+          <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            {msg.role === "assistant" && (
+              <div className="w-6 h-6 rounded-full bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="w-3 h-3 text-[#CBFF4D]" />
+              </div>
+            )}
+            <div className={`max-w-[80%] text-sm px-3.5 py-2.5 rounded-xl leading-relaxed ${msg.role === "user" ? "bg-white/8 text-white/80 rounded-br-sm" : "bg-[#CBFF4D]/8 text-white/70 border border-[#CBFF4D]/10 rounded-bl-sm"}`}>
               {msg.content}
             </div>
+            {msg.role === "user" && (
+              <div className="w-6 h-6 rounded-full bg-white/8 flex items-center justify-center shrink-0 mt-0.5">
+                <User className="w-3 h-3 text-white/40" />
+              </div>
+            )}
           </div>
         ))}
-        {streaming && streamContent && (
-          <div className="flex gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center shrink-0 mt-0.5">
-              <Bot className="w-3 h-3 text-white/50" />
+        {streaming && (
+          <div className="flex gap-3">
+            <div className="w-6 h-6 rounded-full bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center shrink-0">
+              <Bot className="w-3 h-3 text-[#CBFF4D]" />
             </div>
-            <div className="max-w-[78%] px-3.5 py-2.5 rounded-2xl rounded-tl-sm text-sm bg-white/[0.04] text-white/65 border border-white/6">
-              {streamContent}<span className="inline-block w-0.5 h-4 bg-[#CBFF4D] ml-0.5 animate-pulse" />
+            <div className="px-3.5 py-2.5 rounded-xl bg-[#CBFF4D]/8 border border-[#CBFF4D]/10">
+              <Loader2 className="w-4 h-4 text-[#CBFF4D]/60 animate-spin" />
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 border-t border-white/6 flex gap-2">
+      <div className="flex gap-2 px-4 pb-4 pt-2 border-t border-white/5">
         <input
-          data-testid="input-chat-message"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Ask about this wallet..."
-          disabled={streaming}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-white/8 bg-white/[0.04] text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/35 focus:ring-1 focus:ring-[#CBFF4D]/15 disabled:opacity-50 transition-all"
+          className="flex-1 px-3.5 py-2.5 rounded-xl border border-white/8 bg-white/[0.04] text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/30 transition-all"
         />
         <button
           data-testid="btn-send-chat"
@@ -260,8 +262,9 @@ export default function Analyze() {
     query: { enabled: address.length > 5, queryKey: getGetWalletDataQueryKey(address) },
   });
 
-  const { data: analysis, isLoading: analysisLoading } = useAnalyzeWallet(address, {
-    query: { enabled: !!walletData, queryKey: getAnalyzeWalletQueryKey(address) },
+  const analyzeAddress = walletData?.address ?? address;
+  const { data: analysis, isLoading: analysisLoading } = useAnalyzeWallet(analyzeAddress, {
+    query: { enabled: !!walletData && analyzeAddress.length > 5, queryKey: getAnalyzeWalletQueryKey(analyzeAddress) },
   });
 
   const handleSearch = () => { if (rawInput.trim()) setAddress(rawInput.trim()); };
@@ -275,110 +278,115 @@ export default function Analyze() {
     }
   };
 
+  const hasResult = !!walletData || !!walletError || walletLoading;
+
   return (
-    <div className="flex-1 px-5 py-16 bg-[#0C0C0C]">
-      <div className="max-w-3xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#CBFF4D]/30 bg-[#CBFF4D]/8 text-[#CBFF4D] text-xs font-black uppercase tracking-widest mb-5">
-            <Brain className="w-3.5 h-3.5" />
-            AI Powered
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white leading-tight">
-            Wallet <span className="text-[#CBFF4D]">Analyzer</span>
-          </h1>
-          <p className="mt-3 text-white/45">
-            Deep AI analysis of any Ethereum address or ENS name
-          </p>
-        </motion.div>
+    <div className="flex-1 px-5 py-10 bg-[#0C0C0C] min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <div className={`grid gap-10 transition-all duration-500 ${hasResult ? "lg:grid-cols-[380px_1fr]" : "grid-cols-1 max-w-2xl mx-auto"}`}>
 
-        <div className="flex gap-2 mb-3">
-          <input
-            data-testid="input-wallet-search"
-            type="text"
-            value={rawInput}
-            onChange={(e) => setRawInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="0x... or name.eth"
-            className="flex-1 px-4 py-3.5 rounded-xl border border-white/8 bg-white/[0.04] text-white font-mono placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/40 focus:ring-1 focus:ring-[#CBFF4D]/15 text-sm transition-all"
-          />
-          <button
-            data-testid="btn-analyze"
-            onClick={handleSearch}
-            className="flex items-center gap-2 px-6 py-3.5 btn-lime rounded-xl text-sm font-bold text-black shrink-0"
-          >
-            <Search className="w-4 h-4" />
-            Analyze
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3 mb-8">
-          <button
-            onClick={handleUseMyWallet}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] text-white/50 hover:text-white hover:border-white/20 text-xs font-semibold transition-all"
-          >
-            <Wallet className="w-3.5 h-3.5" />
-            {isConnected && connectedAddress
-              ? `Use ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`
-              : "Connect Wallet to Analyze Mine"}
-          </button>
-          {isConnected && connectedAddress && (
-            <button
-              onClick={() => open({ view: "Account" })}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-[#CBFF4D]/50 hover:text-[#CBFF4D] transition-colors"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
-              Connected
-            </button>
-          )}
-        </div>
-
-        {(walletLoading || analysisLoading) && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 text-white/35 py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-[#CBFF4D]/60" />
-            <span className="text-sm">{walletLoading ? "Fetching on-chain data..." : "Running AI analysis..."}</span>
-          </motion.div>
-        )}
-
-        {walletError && (
-          <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm">
-            {(walletError as { response?: { data?: { error?: string } } }).response?.data?.error
-              ?? "Could not fetch wallet data. Check that the address or ENS name is valid."}
-          </div>
-        )}
-
-        {walletData && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-            <WalletCard data={walletData} />
-            {analysis && <AnalysisCard analysis={analysis} />}
-            {!analysisLoading && <AiChat address={address} walletData={walletData} analysis={analysis} />}
-          </motion.div>
-        )}
-
-        {!address && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="relative w-24 h-24 mb-6">
-              <div className="absolute inset-0 rounded-full bg-[#CBFF4D]/5 animate-pulse-glow" />
-              <div className="w-24 h-24 rounded-full bg-[#CBFF4D]/[0.04] border border-[#CBFF4D]/12 flex items-center justify-center">
-                <Brain className="w-12 h-12 text-[#CBFF4D]/20" />
+          {/* Left column: header + search */}
+          <div className={`${hasResult ? "lg:sticky lg:top-8 lg:self-start" : ""}`}>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#CBFF4D]/30 bg-[#CBFF4D]/8 text-[#CBFF4D] text-xs font-black uppercase tracking-widest mb-5">
+                <Brain className="w-3.5 h-3.5" />
+                AI Powered
               </div>
-            </div>
-            <p className="text-lg font-bold text-white/50">Enter a wallet to start</p>
-            <p className="text-sm text-white/25 mt-1">Supports 0x addresses and ENS names</p>
+              <h1 className="text-4xl font-black text-white leading-tight">
+                Wallet <span className="text-[#CBFF4D]">Analyzer</span>
+              </h1>
+              <p className="mt-2 text-white/40 text-sm">
+                Deep AI analysis of any Ethereum address or ENS name
+              </p>
+            </motion.div>
 
-            <div className="mt-8 grid grid-cols-3 gap-3 max-w-sm w-full">
-              {[
-                { icon: Brain, label: "AI Summary" },
-                { icon: Shield, label: "Risk Score" },
-                { icon: Zap, label: "AI Chat" },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex flex-col items-center gap-2 p-4 rounded-xl border border-white/8 bg-white/[0.02]">
-                  <Icon className="w-5 h-5 text-[#CBFF4D]/30" />
-                  <span className="text-xs text-white/25">{label}</span>
-                </div>
-              ))}
+            <div className="flex gap-2 mb-3">
+              <input
+                data-testid="input-wallet-search"
+                type="text"
+                value={rawInput}
+                onChange={(e) => setRawInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="0x... or name.eth"
+                className="flex-1 px-4 py-3.5 rounded-xl border border-white/8 bg-white/[0.04] text-white font-mono placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/40 focus:ring-1 focus:ring-[#CBFF4D]/15 text-sm transition-all"
+              />
+              <button
+                data-testid="btn-analyze"
+                onClick={handleSearch}
+                className="flex items-center gap-2 px-5 py-3.5 btn-lime rounded-xl text-sm font-bold text-black shrink-0"
+              >
+                <Search className="w-4 h-4" />
+                Analyze
+              </button>
             </div>
-          </motion.div>
-        )}
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleUseMyWallet}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] text-white/50 hover:text-white hover:border-white/20 text-xs font-semibold transition-all"
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                {isConnected && connectedAddress
+                  ? `Use ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`
+                  : "Connect Wallet to Analyze Mine"}
+              </button>
+              {isConnected && connectedAddress && (
+                <button
+                  onClick={() => open({ view: "Account" })}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-[#CBFF4D]/50 hover:text-[#CBFF4D] transition-colors"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
+                  Connected
+                </button>
+              )}
+            </div>
+
+            {!hasResult && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-10">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { icon: Brain, label: "AI Summary" },
+                    { icon: Shield, label: "Risk Score" },
+                    { icon: Zap, label: "AI Chat" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex flex-col items-center gap-2 p-4 rounded-xl border border-white/8 bg-white/[0.02]">
+                      <Icon className="w-5 h-5 text-[#CBFF4D]/30" />
+                      <span className="text-xs text-white/25">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Right column: results */}
+          {hasResult && (
+            <div className="space-y-5">
+              {(walletLoading || analysisLoading) && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 text-white/35 py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#CBFF4D]/60" />
+                  <span className="text-sm">{walletLoading ? "Fetching on-chain data..." : "Running AI analysis..."}</span>
+                </motion.div>
+              )}
+
+              {walletError && (
+                <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm">
+                  {(walletError as { response?: { data?: { error?: string } } }).response?.data?.error
+                    ?? "Could not fetch wallet data. Check that the address or ENS name is valid."}
+                </div>
+              )}
+
+              {walletData && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+                  <WalletCard data={walletData} />
+                  {analysis && <AnalysisCard analysis={analysis} />}
+                  {!analysisLoading && <AiChat address={analyzeAddress} walletData={walletData} analysis={analysis} />}
+                </motion.div>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
