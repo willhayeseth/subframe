@@ -559,7 +559,6 @@ export default function Home() {
                   "ENS subdomain claim on subframe.eth",
                   "IPFS profile hosting with live data",
                   "AI Wallet Analyzer",
-                  "On-chain AI Chat via XMTP",
                   "Zero gas for creators",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
@@ -589,8 +588,8 @@ export default function Home() {
                   "ERC-1155 bonding curve editions",
                   "Buy and sell from any profile page",
                   "Creator royalties on every mint and burn",
-                  "Live on-chain price and supply tracking",
-                  "Edition gallery per creator",
+                  "On-chain AI Chat via XMTP",
+                  "Copy Trader",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
                     <div className="w-4 h-4 rounded-full border border-amber-400/40 shrink-0 mt-0.5 flex items-center justify-center">
