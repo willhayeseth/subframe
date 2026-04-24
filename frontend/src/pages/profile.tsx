@@ -489,14 +489,16 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
   const [convId, setConvId] = useState<number | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [streamContent, setStreamContent] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
+  const msgsRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
   const createConv = useCreateOpenaiConversation();
   const { data: messages } = useListOpenaiMessages(convId ?? 0, {
     query: { enabled: !!convId, queryKey: getListOpenaiMessagesQueryKey(convId ?? 0), refetchInterval: false },
   });
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamContent]);
+  useEffect(() => {
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+  }, [messages, streamContent]);
 
   const getCtx = () => {
     const p = [`Wallet: ${address}`];
@@ -558,7 +560,7 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
           Live
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={msgsRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {allMsgs.length === 0 && !streaming && (
           <div className="flex items-center justify-center h-full text-sm text-white/25">
             Ask anything about this wallet...
@@ -584,7 +586,6 @@ function AiChat({ address, walletData, analysis }: { address: string; walletData
             </div>
           </div>
         )}
-        <div ref={endRef} />
       </div>
       <div className="p-3 border-t border-white/[0.05] flex gap-2">
         <input
