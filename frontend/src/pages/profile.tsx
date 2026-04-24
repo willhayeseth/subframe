@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { useAccount, useEnsName } from "wagmi";
+import { useAccount, useEnsName, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { parseEther, formatEther } from "viem";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Brain, Bot, User, Send,
@@ -106,7 +107,7 @@ function buildSteps(subdomain: Subdomain): RegStep[] {
         ? `Art Token deployed: $${subdomain.tokenSymbol ?? "..."}`
         : ts === "failed"
           ? "Art Token deployment failed"
-          : "Art Token deploying on Uniswap V2",
+          : "Art Token minting on bonding curve",
       txHash: subdomain.tokenDeployTxHash,
       state: ts === "deployed" ? "done" : ts === "deploying" ? "waiting" : ts === "failed" ? "done" : "pending",
     },
@@ -200,181 +201,144 @@ function RegistrationLog({ subdomain }: { subdomain: Subdomain }) {
 
 /* ─── art token card ────────────────────────────────────── */
 
-interface DexPairData {
-  priceUsd: string;
-  priceChange: { m5: number; h1: number; h6: number; h24: number };
-  volume: { h24: number };
-  liquidity: { usd: number };
-  fdv: number;
-  txns: { h24: { buys: number; sells: number } };
+const ART_PROTOCOL_MINI_ABI = [
+  { name: "getMintPrice", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "getBurnPayout", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "totalSupply", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "balanceOf", type: "function", inputs: [{ name: "account", type: "address" }, { name: "id", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "mint", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [], stateMutability: "payable" },
+  { name: "burn", type: "function", inputs: [{ name: "tokenId", type: "uint256" }, { name: "amount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+] as const;
+
+function fmtEth(wei: bigint): string {
+  const e = parseFloat(formatEther(wei));
+  if (e >= 1) return `${e.toFixed(4)} ETH`;
+  if (e >= 0.001) return `${e.toFixed(6)} ETH`;
+  return `${e.toFixed(8)} ETH`;
 }
 
-function useTokenPrice(pairAddress: string | null | undefined) {
-  const [data, setData] = useState<DexPairData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+function buildCurvePoints(currentSupply: number): { supply: number; price: number }[] {
+  const BASE = 0.001;
+  const INC = 0.0001;
+  const max = Math.max(currentSupply + 20, 30);
+  return Array.from({ length: max + 1 }, (_, i) => ({ supply: i, price: parseFloat((BASE + i * INC).toFixed(6)) }));
+}
+
+function ArtBondingCurve({ contractAddress, artTokenId }: { contractAddress: string; artTokenId: string }) {
+  const { address: userAddress } = useAccount();
+  const tokenId = BigInt(artTokenId);
+  const addr = contractAddress as `0x${string}`;
+
+  const { data: mintPrice, refetch: refetchMintPrice } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "getMintPrice", args: [tokenId] });
+  const { data: burnPayout, refetch: refetchBurnPayout } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "getBurnPayout", args: [tokenId] });
+  const { data: supply, refetch: refetchSupply } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "totalSupply", args: [tokenId] });
+  const { data: userBalance } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "balanceOf", args: userAddress ? [userAddress, tokenId] : undefined, query: { enabled: !!userAddress } });
+
+  const { writeContract: writeMint, data: mintTxHash, isPending: mintPending, error: mintError } = useWriteContract();
+  const { writeContract: writeBurn, data: burnTxHash, isPending: burnPending, error: burnError } = useWriteContract();
+  const { isLoading: mintConfirming, isSuccess: mintSuccess } = useWaitForTransactionReceipt({ hash: mintTxHash });
+  const { isLoading: burnConfirming, isSuccess: burnSuccess } = useWaitForTransactionReceipt({ hash: burnTxHash });
 
   useEffect(() => {
-    if (!pairAddress) return;
-    setLoading(true);
-    setError(false);
-    fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${pairAddress}`)
-      .then(r => r.json())
-      .then(j => {
-        const pair = j?.pairs?.[0] ?? j?.pair;
-        if (pair) setData(pair as DexPairData);
-        else setError(true);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+    if (mintSuccess || burnSuccess) {
+      refetchMintPrice(); refetchBurnPayout(); refetchSupply();
+    }
+  }, [mintSuccess, burnSuccess]);
 
-    const iv = setInterval(() => {
-      fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${pairAddress}`)
-        .then(r => r.json())
-        .then(j => {
-          const pair = j?.pairs?.[0] ?? j?.pair;
-          if (pair) setData(pair as DexPairData);
-        })
-        .catch(() => {});
-    }, 30_000);
+  const currentSupply = Number(supply ?? 0n);
+  const curveData = buildCurvePoints(currentSupply);
+  const holdingCount = Number(userBalance ?? 0n);
 
-    return () => clearInterval(iv);
-  }, [pairAddress]);
+  const handleMint = () => {
+    if (!mintPrice) return;
+    writeMint({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "mint", args: [tokenId], value: mintPrice });
+  };
 
-  return { data, loading, error };
-}
+  const handleBurn = () => {
+    if (holdingCount < 1) return;
+    writeBurn({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "burn", args: [tokenId, 1n] });
+  };
 
-function buildSparkline(priceUsd: number, change24h: number): { t: string; p: number }[] {
-  const startPrice = priceUsd / (1 + change24h / 100);
-  const points = 24;
-  const result: { t: string; p: number }[] = [];
-  for (let i = 0; i <= points; i++) {
-    const base = startPrice + (priceUsd - startPrice) * (i / points);
-    const noise = base * 0.015 * (Math.sin(i * 2.5) + Math.cos(i * 1.3));
-    const label = `${24 - i}h`;
-    result.push({ t: i === points ? "now" : label, p: parseFloat((base + noise).toFixed(8)) });
-  }
-  return result;
-}
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
-  return `$${n.toFixed(2)}`;
-}
-
-function fmtPrice(p: number): string {
-  if (p >= 1) return `$${p.toFixed(4)}`;
-  if (p >= 0.01) return `$${p.toFixed(6)}`;
-  return `$${p.toFixed(10)}`;
-}
-
-function TokenPriceChart({ pairAddress }: { pairAddress: string }) {
-  const { data, loading, error } = useTokenPrice(pairAddress);
-
-  if (loading) {
-    return (
-      <div className="mt-3 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 space-y-2">
-        <div className="h-3 w-24 rounded bg-white/[0.06] animate-pulse" />
-        <div className="h-16 rounded bg-white/[0.04] animate-pulse" />
-        <div className="flex gap-2">
-          {[1, 2, 3].map(i => <div key={i} className="h-8 flex-1 rounded bg-white/[0.04] animate-pulse" />)}
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="mt-3 rounded-lg border border-white/[0.05] p-3 text-center">
-        <p className="text-xs text-white/20 font-mono">Price data unavailable — pair may be new</p>
-      </div>
-    );
-  }
-
-  const price = parseFloat(data.priceUsd ?? "0");
-  const change24h = data.priceChange?.h24 ?? 0;
-  const isUp = change24h >= 0;
-  const sparkline = buildSparkline(price, change24h);
-  const chartColor = isUp ? "#CBFF4D" : "#f87171";
-
-  const buys = data.txns?.h24?.buys ?? 0;
-  const sells = data.txns?.h24?.sells ?? 0;
-  const totalTxns = buys + sells;
-  const buyPct = totalTxns > 0 ? Math.round((buys / totalTxns) * 100) : 50;
+  const mintLoading = mintPending || mintConfirming;
+  const burnLoading = burnPending || burnConfirming;
 
   return (
-    <div className="mt-3 space-y-2">
+    <div className="mt-3 space-y-3">
       <div className="flex items-end justify-between gap-2">
         <div>
-          <div className="font-mono text-xl font-black text-white">{fmtPrice(price)}</div>
-          <div className="text-[10px] text-white/25 font-mono">current price</div>
+          <div className="font-mono text-xl font-black text-[#CBFF4D]">{mintPrice ? fmtEth(mintPrice) : "---"}</div>
+          <div className="text-[10px] text-white/25 font-mono">mint price (bonding curve)</div>
         </div>
-        <div className={`flex flex-col items-end ${isUp ? "text-[#CBFF4D]" : "text-red-400"}`}>
-          <div className="flex items-center gap-1 font-mono font-black text-lg">
-            {isUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-            {isUp ? "+" : ""}{change24h.toFixed(2)}%
-          </div>
-          <div className="text-[10px] text-white/25 font-mono">24h PnL</div>
+        <div className="text-right">
+          <div className="font-mono text-sm font-bold text-white/60">{currentSupply}</div>
+          <div className="text-[10px] text-white/25 font-mono">editions minted</div>
         </div>
       </div>
 
-      <div className="h-[80px] w-full -mx-0.5">
+      <div className="h-[70px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={sparkline} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+          <AreaChart data={curveData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
             <defs>
-              <linearGradient id={`grad-${isUp ? "up" : "dn"}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+              <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#CBFF4D" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#CBFF4D" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="t" hide />
+            <XAxis dataKey="supply" hide />
             <YAxis domain={["auto", "auto"]} hide />
             <Tooltip
               contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontSize: 11, fontFamily: "monospace" }}
-              itemStyle={{ color: chartColor }}
+              itemStyle={{ color: "#CBFF4D" }}
               labelStyle={{ color: "rgba(255,255,255,0.3)" }}
-              formatter={(v: number) => [fmtPrice(v), "price"]}
+              formatter={(v: number) => [`${v.toFixed(6)} ETH`, "price"]}
+              labelFormatter={(l: number) => `supply: ${l}`}
             />
-            <Area
-              type="monotone"
-              dataKey="p"
-              stroke={chartColor}
-              strokeWidth={1.5}
-              fill={`url(#grad-${isUp ? "up" : "dn"})`}
-              dot={false}
-              activeDot={{ r: 3, fill: chartColor }}
-            />
+            <Area type="monotone" dataKey="price" stroke="#CBFF4D" strokeWidth={1.5} fill="url(#curveGrad)"
+              dot={(props: { cx: number; cy: number; index: number }) => {
+                if (props.index !== currentSupply) return <g key={props.index} />;
+                return <circle key={props.index} cx={props.cx} cy={props.cy} r={5} fill="#CBFF4D" stroke="#111" strokeWidth={2} />;
+              }}
+              activeDot={{ r: 3, fill: "#CBFF4D", strokeWidth: 0 }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-3 gap-1.5">
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
-          <div className="text-[9px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Vol 24h</div>
-          <div className="font-mono text-xs text-white/60 font-bold">{fmt(data.volume?.h24 ?? 0)}</div>
-        </div>
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
-          <div className="text-[9px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Liquidity</div>
-          <div className="font-mono text-xs text-white/60 font-bold">{fmt(data.liquidity?.usd ?? 0)}</div>
-        </div>
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
-          <div className="text-[9px] text-white/25 uppercase tracking-widest font-mono mb-0.5">FDV</div>
-          <div className="font-mono text-xs text-white/60 font-bold">{fmt(data.fdv ?? 0)}</div>
-        </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={handleMint}
+          disabled={mintLoading || !mintPrice || !userAddress}
+          className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/25 text-[#CBFF4D] text-sm font-bold hover:bg-[#CBFF4D]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          {mintLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+          {mintLoading ? "Buying..." : `Buy ${mintPrice ? fmtEth(mintPrice) : ""}`}
+        </button>
+        <button
+          onClick={handleBurn}
+          disabled={burnLoading || holdingCount < 1 || !userAddress}
+          className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          {burnLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingDown className="w-4 h-4" />}
+          {burnLoading ? "Selling..." : `Sell ${burnPayout ? fmtEth(burnPayout) : ""}`}
+        </button>
       </div>
 
-      {totalTxns > 0 && (
-        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
-          <div className="flex justify-between text-[9px] font-mono mb-1">
-            <span className="text-[#CBFF4D]/60">{buys} buys</span>
-            <span className="text-white/25 uppercase tracking-widest">24h txns</span>
-            <span className="text-red-400/60">{sells} sells</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-red-400/20 overflow-hidden">
-            <div className="h-full rounded-full bg-[#CBFF4D]/60 transition-all duration-500" style={{ width: `${buyPct}%` }} />
-          </div>
+      {!userAddress && (
+        <p className="text-center text-xs text-white/25 font-mono">Connect wallet to buy or sell</p>
+      )}
+
+      {holdingCount > 0 && (
+        <div className="rounded-lg bg-[#CBFF4D]/5 border border-[#CBFF4D]/10 px-3 py-2 text-center">
+          <span className="text-xs font-mono text-[#CBFF4D]/70">You hold <strong>{holdingCount}</strong> edition{holdingCount !== 1 ? "s" : ""}</span>
+          {burnPayout && <span className="text-white/25 font-mono text-xs"> · sell value: {fmtEth(burnPayout * BigInt(holdingCount))}</span>}
         </div>
+      )}
+
+      {(mintError || burnError) && (
+        <p className="text-xs text-red-400/60 font-mono text-center truncate">{(mintError ?? burnError)?.message?.slice(0, 80)}</p>
+      )}
+
+      {(mintSuccess || burnSuccess) && (
+        <p className="text-xs text-[#CBFF4D]/60 font-mono text-center">Transaction confirmed</p>
       )}
     </div>
   );
@@ -392,10 +356,6 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
 
   if (ts === "none") return null;
 
-  const uniswapUrl = subdomain.tokenAddress
-    ? `https://app.uniswap.org/swap?outputCurrency=${subdomain.tokenAddress}&chain=mainnet`
-    : null;
-
   return (
     <div className="rounded-xl border border-[#CBFF4D]/15 bg-[#080808] overflow-hidden">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/20 to-transparent" />
@@ -406,7 +366,7 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
           {ts === "deployed" ? (
             <>
               <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D]" />
-              <span className="text-[#CBFF4D]/70">live on Uniswap</span>
+              <span className="text-[#CBFF4D]/70">live on bonding curve</span>
             </>
           ) : ts === "deploying" ? (
             <>
@@ -425,35 +385,21 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
       <div className="p-4 space-y-3">
         {ts === "deploying" && (
           <p className="text-xs text-white/30 font-mono">
-            Deploying ERC-20 contract and seeding Uniswap V2 liquidity pool...
+            Creating ERC-1155 edition on bonding curve...
           </p>
         )}
 
         {ts === "deployed" && (
           <>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-mono text-lg font-black text-[#CBFF4D]">
-                  ${subdomain.tokenSymbol ?? "..."}
-                </div>
-                <div className="text-xs text-white/30">{subdomain.tokenName ?? ""}</div>
+            <div className="flex items-center gap-3">
+              <div className="font-mono text-lg font-black text-[#CBFF4D]">
+                ${subdomain.tokenSymbol ?? "..."}
               </div>
-              {uniswapUrl && (
-                <a
-                  href={uniswapUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 text-[#CBFF4D] text-xs font-bold hover:bg-[#CBFF4D]/20 transition-colors"
-                >
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  Trade
-                  <ArrowUpRight className="w-3 h-3" />
-                </a>
-              )}
+              <div className="text-xs text-white/30 font-mono">{subdomain.tokenName ?? ""}</div>
             </div>
 
-            {subdomain.uniswapPairAddress && (
-              <TokenPriceChart pairAddress={subdomain.uniswapPairAddress} />
+            {subdomain.tokenAddress && subdomain.artTokenId && (
+              <ArtBondingCurve contractAddress={subdomain.tokenAddress} artTokenId={subdomain.artTokenId} />
             )}
 
             {subdomain.tokenAddress && (
@@ -483,23 +429,23 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
                   </div>
                 </div>
 
-                {subdomain.uniswapPairAddress && (
+                {subdomain.artTokenId && (
                   <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
                     <div>
-                      <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Uniswap Pair</div>
+                      <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Token ID</div>
                       <span className="font-mono text-xs text-white/45 truncate">
-                        {subdomain.uniswapPairAddress.slice(0, 18)}...{subdomain.uniswapPairAddress.slice(-6)}
+                        #{subdomain.artTokenId}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
-                        onClick={() => copy(subdomain.uniswapPairAddress!, "pair")}
+                        onClick={() => copy(subdomain.artTokenId!, "pair")}
                         className="text-white/20 hover:text-[#CBFF4D] transition-colors"
                       >
                         {copiedAddr === "pair" ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                       <a
-                        href={`https://etherscan.io/address/${subdomain.uniswapPairAddress}`}
+                        href={`https://etherscan.io/token/${subdomain.tokenAddress}?a=${subdomain.artTokenId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-white/20 hover:text-[#CBFF4D] transition-colors"
@@ -1534,7 +1480,7 @@ export function StandaloneProfile() {
                   {subdomain.name} Art
                 </div>
                 <div className="text-xs text-white/30 font-mono mt-0.5">
-                  ERC-20 on Ethereum
+                  ERC-1155 on Ethereum
                 </div>
               </div>
               <div className="flex items-center gap-2">

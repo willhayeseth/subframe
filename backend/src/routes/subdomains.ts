@@ -159,16 +159,15 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
         }
 
         if (tokenResult.status === "fulfilled") {
-          const { tokenAddress, tokenTxHash, pairAddress, liquidityTxHash } = tokenResult.value;
+          const { contractAddress, artTokenId, createTxHash } = tokenResult.value;
           await db.update(subdomainsTable).set({
             tokenStatus: "deployed",
-            tokenAddress,
-            tokenDeployTxHash: tokenTxHash,
-            uniswapPairAddress: pairAddress,
-            uniswapLiquidityTxHash: liquidityTxHash,
+            tokenAddress: contractAddress,
+            tokenDeployTxHash: createTxHash,
+            artTokenId,
             updatedAt: new Date(),
           }).where(eq(subdomainsTable.id, subdomain.id));
-          console.log(`[CLAIM] Art Token deployed: ${tokenAddress} (pair: ${pairAddress})`);
+          console.log(`[CLAIM] Art Token created: contract=${contractAddress} tokenId=${artTokenId}`);
         } else {
           console.error("[CLAIM] Art Token deployment FAILED:", tokenResult.reason);
           await db.update(subdomainsTable).set({

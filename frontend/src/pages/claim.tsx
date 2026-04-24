@@ -342,8 +342,8 @@ export default function Claim() {
 
               <div className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.04] p-4">
                 <p className="text-xs text-white/55 leading-relaxed mb-3">
-                  Your uploaded image will automatically be published as a tradable art token on Uniswap V2 on Ethereum. You earn{" "}
-                  <span className="text-[#CBFF4D] font-bold">0.5%</span> from every buy and sell. Subframe takes 0.5%. The 1% fee applies everywhere the token trades.
+                  Your uploaded image will automatically be published as a tradable ERC-1155 edition on a bonding curve on Ethereum. You earn{" "}
+                  <span className="text-[#CBFF4D] font-bold">0.5%</span> from every mint and burn. Subframe takes 0.5%. The 1% fee applies to every mint and burn.
                 </p>
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div

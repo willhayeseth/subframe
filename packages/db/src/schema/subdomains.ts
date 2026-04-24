@@ -25,6 +25,7 @@ export const subdomainsTable = pgTable("subdomains", {
   tokenDeployTxHash: text("token_deploy_tx_hash"),
   uniswapPairAddress: text("uniswap_pair_address"),
   uniswapLiquidityTxHash: text("uniswap_liquidity_tx_hash"),
+  artTokenId: text("art_token_id"),
   claimedAt: timestamp("claimed_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -10,40 +10,36 @@ const MOCK_COLLECTION = [
     image: "/art/art1.png",
     creator: "vitalik.subframe.eth",
     name: "ETH Crystal",
-    priceEth: "0.0045",
-    change24h: 18.3,
-    volumeEth: "1.23",
-    boughtAt: "0.0028",
+    mintPrice: "0.0055",
+    editions: 45,
+    mintedAt: "0.0010",
   },
   {
     id: 2,
     image: "/art/art3.png",
     creator: "cryptoninja.subframe.eth",
     name: "Neon City",
-    priceEth: "0.0089",
-    change24h: 42.1,
-    volumeEth: "3.77",
-    boughtAt: "0.0050",
+    mintPrice: "0.0089",
+    editions: 79,
+    mintedAt: "0.0050",
   },
   {
     id: 3,
     image: "/art/art5.png",
     creator: "satoshi.subframe.eth",
     name: "Cosmic Jelly",
-    priceEth: "0.0201",
-    change24h: 67.4,
-    volumeEth: "9.10",
-    boughtAt: "0.0110",
+    mintPrice: "0.0201",
+    editions: 191,
+    mintedAt: "0.0110",
   },
   {
     id: 4,
     image: "/art/art8.png",
     creator: "synth.subframe.eth",
     name: "Synthwave Horizon",
-    priceEth: "0.0033",
-    change24h: 29.7,
-    volumeEth: "4.02",
-    boughtAt: "0.0020",
+    mintPrice: "0.0033",
+    editions: 23,
+    mintedAt: "0.0020",
   },
 ];
 
@@ -58,7 +54,7 @@ export default function Collection() {
         </div>
         <h1 className="text-2xl font-black text-white mb-2">Connect Your Wallet</h1>
         <p className="text-white/40 text-sm text-center max-w-xs mb-8">
-          Connect your wallet to see the art tokens you hold.
+          Connect your wallet to see the art editions you hold.
         </p>
         <Link href="/claim">
           <button className="flex items-center gap-2 px-6 py-3 btn-lime rounded-full text-sm font-black">
@@ -98,9 +94,9 @@ export default function Collection() {
             <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
               <ImageIcon className="w-8 h-8 text-white/20" />
             </div>
-            <p className="text-white/40 text-sm mb-2">No art tokens held yet</p>
+            <p className="text-white/40 text-sm mb-2">No art editions held yet</p>
             <p className="text-white/20 text-xs">
-              Browse the registry and buy art from creators
+              Browse the registry and mint editions from creators
             </p>
             <Link href="/explore">
               <button className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/15 text-white/60 hover:text-white hover:border-white/30 text-sm font-semibold transition-all">
@@ -124,23 +120,22 @@ export default function Collection() {
                       image={item.image}
                       creator={item.creator}
                       name={item.name}
-                      priceEth={item.priceEth}
-                      change24h={item.change24h}
-                      volumeEth={item.volumeEth}
+                      mintPrice={item.mintPrice}
+                      editions={item.editions}
                     />
                     <div className="mt-2 px-1 flex items-center justify-between text-xs">
-                      <span className="text-white/25">Bought at {item.boughtAt} ETH</span>
+                      <span className="text-white/25">Minted at {item.mintedAt} ETH</span>
                       <span
                         className={
-                          parseFloat(item.priceEth) >= parseFloat(item.boughtAt)
+                          parseFloat(item.mintPrice) >= parseFloat(item.mintedAt)
                             ? "text-emerald-400 font-bold"
                             : "text-red-400 font-bold"
                         }
                       >
-                        {parseFloat(item.priceEth) >= parseFloat(item.boughtAt) ? "+" : ""}
+                        {parseFloat(item.mintPrice) >= parseFloat(item.mintedAt) ? "+" : ""}
                         {(
-                          ((parseFloat(item.priceEth) - parseFloat(item.boughtAt)) /
-                            parseFloat(item.boughtAt)) *
+                          ((parseFloat(item.mintPrice) - parseFloat(item.mintedAt)) /
+                            parseFloat(item.mintedAt)) *
                           100
                         ).toFixed(1)}
                         %
@@ -156,19 +151,19 @@ export default function Collection() {
                 <div className="text-2xl font-black font-mono text-[#CBFF4D]">
                   {MOCK_COLLECTION.length}
                 </div>
-                <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">Art Held</div>
+                <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">Editions Held</div>
               </div>
               <div>
                 <div className="text-2xl font-black font-mono text-white">
-                  {MOCK_COLLECTION.reduce((s, i) => s + parseFloat(i.priceEth), 0).toFixed(4)} ETH
+                  {MOCK_COLLECTION.reduce((s, i) => s + parseFloat(i.mintPrice), 0).toFixed(4)} ETH
                 </div>
                 <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">Current Value</div>
               </div>
               <div>
                 <div className="text-2xl font-black font-mono text-white">
-                  {MOCK_COLLECTION.reduce((s, i) => s + parseFloat(i.boughtAt), 0).toFixed(4)} ETH
+                  {MOCK_COLLECTION.reduce((s, i) => s + parseFloat(i.mintedAt), 0).toFixed(4)} ETH
                 </div>
-                <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">Total Cost</div>
+                <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">Total Minted At</div>
               </div>
             </div>
           </>

@@ -22,6 +22,16 @@ export const SubdomainStatus = {
   linked: "linked",
 } as const;
 
+export type SubdomainTokenStatus =
+  (typeof SubdomainTokenStatus)[keyof typeof SubdomainTokenStatus];
+
+export const SubdomainTokenStatus = {
+  none: "none",
+  deploying: "deploying",
+  deployed: "deployed",
+  failed: "failed",
+} as const;
+
 export interface Subdomain {
   id: number;
   name: string;
@@ -34,6 +44,29 @@ export interface Subdomain {
   /** @nullable */
   bio: string | null;
   status: SubdomainStatus;
+  /** @nullable */
+  ensTx1Hash: string | null;
+  /** @nullable */
+  ensTx2Hash: string | null;
+  /** @nullable */
+  ensTx3Hash: string | null;
+  /** @nullable */
+  ensTx4Hash: string | null;
+  tokenStatus: SubdomainTokenStatus;
+  /** @nullable */
+  tokenAddress: string | null;
+  /** @nullable */
+  tokenSymbol: string | null;
+  /** @nullable */
+  tokenName: string | null;
+  /** @nullable */
+  tokenDeployTxHash: string | null;
+  /** @nullable */
+  uniswapPairAddress: string | null;
+  /** @nullable */
+  uniswapLiquidityTxHash: string | null;
+  /** @nullable */
+  artTokenId: string | null;
   claimedAt: string;
   updatedAt: string;
 }

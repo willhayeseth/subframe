@@ -7,14 +7,14 @@ import { SubframeNetworkMap } from "../components/network-map";
 import { ArtCard } from "@/components/art-card";
 
 const MOCK_ART = [
-  { id: 1, image: "/art/art1.png", creator: "vitalik.subframe.eth", name: "ETH Crystal", priceEth: "0.0045", change24h: 18.3, volumeEth: "1.23" },
-  { id: 2, image: "/art/art2.png", creator: "hayes.subframe.eth", name: "Spiral Infinite", priceEth: "0.0012", change24h: -8.5, volumeEth: "0.31" },
-  { id: 3, image: "/art/art3.png", creator: "cryptoninja.subframe.eth", name: "Neon City", priceEth: "0.0089", change24h: 42.1, volumeEth: "3.77" },
-  { id: 4, image: "/art/art4.png", creator: "defiwhale.subframe.eth", name: "Glitch Protocol", priceEth: "0.0031", change24h: 5.6, volumeEth: "0.88" },
-  { id: 5, image: "/art/art5.png", creator: "satoshi.subframe.eth", name: "Cosmic Jelly", priceEth: "0.0201", change24h: 67.4, volumeEth: "9.10" },
-  { id: 6, image: "/art/art6.png", creator: "liquidmeta.subframe.eth", name: "Liquid Gold", priceEth: "0.0058", change24h: 11.2, volumeEth: "2.14" },
-  { id: 7, image: "/art/art7.png", creator: "mandala.subframe.eth", name: "Sacred Geometry", priceEth: "0.0074", change24h: -3.8, volumeEth: "0.61" },
-  { id: 8, image: "/art/art8.png", creator: "synth.subframe.eth", name: "Synthwave Horizon", priceEth: "0.0033", change24h: 29.7, volumeEth: "4.02" },
+  { id: 1, image: "/art/art1.png", creator: "vitalik.subframe.eth", name: "ETH Crystal", mintPrice: "0.0055", editions: 45 },
+  { id: 2, image: "/art/art2.png", creator: "hayes.subframe.eth", name: "Spiral Infinite", mintPrice: "0.0021", editions: 11 },
+  { id: 3, image: "/art/art3.png", creator: "cryptoninja.subframe.eth", name: "Neon City", mintPrice: "0.0089", editions: 79 },
+  { id: 4, image: "/art/art4.png", creator: "defiwhale.subframe.eth", name: "Glitch Protocol", mintPrice: "0.0031", editions: 21 },
+  { id: 5, image: "/art/art5.png", creator: "satoshi.subframe.eth", name: "Cosmic Jelly", mintPrice: "0.0201", editions: 191 },
+  { id: 6, image: "/art/art6.png", creator: "liquidmeta.subframe.eth", name: "Liquid Gold", mintPrice: "0.0058", editions: 48 },
+  { id: 7, image: "/art/art7.png", creator: "mandala.subframe.eth", name: "Sacred Geometry", mintPrice: "0.0074", editions: 64 },
+  { id: 8, image: "/art/art8.png", creator: "synth.subframe.eth", name: "Synthwave Horizon", mintPrice: "0.0033", editions: 23 },
 ];
 
 function StatusBadge({ status }: { status: string }) {
@@ -149,9 +149,8 @@ export default function Explore() {
                     image={item.image}
                     creator={item.creator}
                     name={item.name}
-                    priceEth={item.priceEth}
-                    change24h={item.change24h}
-                    volumeEth={item.volumeEth}
+                    mintPrice={item.mintPrice}
+                    editions={item.editions}
                   />
                 </motion.div>
               ))}

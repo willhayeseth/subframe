@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowRight, ChevronRight, TrendingUp, Zap } from "lucide-react";
+import { ArrowUpRight, ArrowRight, ChevronRight, TrendingUp, Zap, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { useGetSubdomainStats, useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 
@@ -411,7 +411,7 @@ export default function Home() {
           number="04"
           title="Turn your PFP into"
           titleAccent="tradable art"
-          desc="Upload any image when you claim your identity. It becomes an ERC-20 token on Uniswap V2. You earn 0.5% from every buy and sell, forever. Protocol pays the gas."
+          desc="Upload any image when you claim your identity. It becomes an ERC-1155 token on a bonding curve. You earn 0.5% from every mint and burn, forever. Protocol pays the gas."
           animation={<ArtAnim />}
           reverse
           ctaLabel="Start Creating"
@@ -518,6 +518,120 @@ export default function Home() {
               </ScrollCard>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── ROADMAP ─── */}
+      <section
+        className="px-5 md:px-10 py-12 md:py-16 max-w-7xl mx-auto w-full flex flex-col justify-center"
+        style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 48, filter: "blur(10px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.9, ease: EASE }}
+          className="mb-14"
+        >
+          <div className="text-sm font-mono text-white/30 mb-4 tracking-wider">/ 06</div>
+          <h2 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-tight">
+            Where we are{" "}
+            <span className="highlight-lime">going</span>
+          </h2>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          {/* Card 1: Live Now */}
+          <ScrollCard index={0}>
+            <div className="relative h-full flex flex-col p-7 rounded-3xl border border-[#CBFF4D]/25 bg-[#CBFF4D]/[0.04] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/40 to-transparent" />
+              <div className="flex items-center gap-2 mb-6">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#CBFF4D] text-black text-[11px] font-black uppercase tracking-widest">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Live Now
+                </div>
+              </div>
+              <h3 className="text-2xl font-black text-white mb-5 leading-tight">
+                Identity and Profile
+              </h3>
+              <ul className="space-y-3 flex-1">
+                {[
+                  "ENS subdomain claim on subframe.eth",
+                  "IPFS profile hosting with live data",
+                  "AI Wallet Analyzer",
+                  "On-chain AI Chat via XMTP",
+                  "Zero gas for creators",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#CBFF4D] shrink-0 mt-0.5" />
+                    <span className="text-sm text-white/60 leading-snug">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollCard>
+
+          {/* Card 2: In Progress */}
+          <ScrollCard index={1}>
+            <div className="relative h-full flex flex-col p-7 rounded-3xl border border-white/10 bg-white/[0.03] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="flex items-center gap-2 mb-6">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-amber-400 text-[11px] font-black uppercase tracking-widest">
+                  <Clock className="w-3 h-3" />
+                  Building
+                </div>
+              </div>
+              <h3 className="text-2xl font-black text-white mb-5 leading-tight">
+                Art Protocol
+              </h3>
+              <ul className="space-y-3 flex-1">
+                {[
+                  "ERC-1155 bonding curve editions",
+                  "Buy and sell from any profile page",
+                  "Creator royalties on every mint and burn",
+                  "Live on-chain price and supply tracking",
+                  "Edition gallery per creator",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <div className="w-4 h-4 rounded-full border border-amber-400/40 shrink-0 mt-0.5 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400/60" />
+                    </div>
+                    <span className="text-sm text-white/50 leading-snug">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollCard>
+
+          {/* Card 3: Planned */}
+          <ScrollCard index={2}>
+            <div className="relative h-full flex flex-col p-7 rounded-3xl border border-white/[0.07] bg-white/[0.02] overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+              <div className="flex items-center gap-2 mb-6">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/10 text-white/40 text-[11px] font-black uppercase tracking-widest">
+                  <Sparkles className="w-3 h-3" />
+                  Coming Soon
+                </div>
+              </div>
+              <h3 className="text-2xl font-black text-white mb-5 leading-tight">
+                Ecosystem
+              </h3>
+              <ul className="space-y-3 flex-1">
+                {[
+                  "X and Telegram bots for subdomain alerts",
+                  "Mobile app for claiming and browsing",
+                  "Cross-chain ENS support",
+                  "Community governance via edition holders",
+                  "Open API and webhook integrations",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <div className="w-4 h-4 rounded-full border border-white/15 shrink-0 mt-0.5" />
+                    <span className="text-sm text-white/35 leading-snug">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollCard>
         </div>
       </section>
 

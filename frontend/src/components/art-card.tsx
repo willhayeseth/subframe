@@ -1,13 +1,13 @@
-import { TrendingUp, TrendingDown, ExternalLink, ImageIcon } from "lucide-react";
+import { ExternalLink, ImageIcon, Layers } from "lucide-react";
 
 export interface ArtCardProps {
   image?: string | null;
   creator?: string;
   name?: string;
-  priceEth?: string;
-  change24h?: number;
-  volumeEth?: string;
+  mintPrice?: string;
+  editions?: number;
   contractAddress?: string;
+  tokenId?: string;
   onClick?: () => void;
 }
 
@@ -15,13 +15,15 @@ export function ArtCard({
   image,
   creator = "unknown.subframe.eth",
   name = "Untitled Art",
-  priceEth = "0.0000",
-  change24h = 0,
-  volumeEth = "0.00",
+  mintPrice = "0.001",
+  editions = 0,
   contractAddress,
+  tokenId,
   onClick,
 }: ArtCardProps) {
-  const isUp = change24h >= 0;
+  const etherscanHref = contractAddress
+    ? `https://etherscan.io/token/${contractAddress}${tokenId ? `?a=${tokenId}` : ""}`
+    : undefined;
 
   return (
     <div
@@ -50,9 +52,9 @@ export function ArtCard({
             <div className="text-sm font-bold text-white truncate">{name}</div>
             <div className="text-xs text-white/35 font-mono truncate mt-0.5">{creator}</div>
           </div>
-          {contractAddress && (
+          {etherscanHref && (
             <a
-              href={`https://dexscreener.com/base/${contractAddress}`}
+              href={etherscanHref}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -65,23 +67,12 @@ export function ArtCard({
 
         <div className="flex items-center justify-between pt-2 border-t border-white/[0.05]">
           <div>
-            <div className="text-base font-black font-mono text-white">{priceEth} ETH</div>
-            <div className="text-[10px] text-white/30 mt-0.5">Vol: {volumeEth} ETH</div>
+            <div className="text-base font-black font-mono text-white">{mintPrice} ETH</div>
+            <div className="text-[10px] text-white/30 mt-0.5">mint price</div>
           </div>
-          <div
-            className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${
-              isUp
-                ? "text-emerald-400 bg-emerald-400/10"
-                : "text-red-400 bg-red-400/10"
-            }`}
-          >
-            {isUp ? (
-              <TrendingUp className="w-3 h-3" />
-            ) : (
-              <TrendingDown className="w-3 h-3" />
-            )}
-            {isUp ? "+" : ""}
-            {change24h.toFixed(1)}%
+          <div className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg text-[#CBFF4D] bg-[#CBFF4D]/10">
+            <Layers className="w-3 h-3" />
+            {editions} minted
           </div>
         </div>
 
@@ -91,7 +82,7 @@ export function ArtCard({
           }}
           className="w-full mt-1 py-2.5 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 text-[#CBFF4D] text-xs font-bold hover:bg-[#CBFF4D]/20 hover:border-[#CBFF4D]/40 transition-all"
         >
-          Buy on Uniswap
+          View Profile
         </button>
       </div>
     </div>

@@ -562,32 +562,33 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
     ],
     content: (
       <>
-        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-20 token on Ethereum with built-in creator royalties." />
-        <Callout type="success">Subframe Protocol pays all gas fees for token deployment. Creators pay nothing.</Callout>
+        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-1155 edition on a bonding curve with built-in creator royalties." />
+        <Callout type="success">Subframe Protocol pays all gas fees for token creation. Creators pay nothing.</Callout>
         <H2 id="overview">Overview</H2>
-        <P>When you upload a profile image during the claim flow, Subframe Protocol deploys a fee-on-transfer ERC-20 token on Ethereum representing your art. The token is immediately seeded with an initial Uniswap V2 liquidity pool and is tradable by anyone.</P>
-        <P>Your image is stored permanently on IPFS and attached to the token metadata. The token contract references your ENS subdomain so ownership and creator identity are fully on-chain.</P>
+        <P>When you upload a profile image during the claim flow, Subframe Protocol mints a unique ERC-1155 token ID on the shared SubframeArtProtocol contract. The token is immediately available for minting on a bonding curve by anyone.</P>
+        <P>Your image is stored permanently on IPFS and attached to the token metadata. The token ID references your ENS subdomain so ownership and creator identity are fully on-chain and verifiable.</P>
         <H2 id="how-it-works">How it works</H2>
         {[
-          ["Upload image", "Upload any JPG, PNG, WebP, or GIF during the claim step. Subframe stores it on IPFS."],
-          ["Token deployed", "The protocol deploys a fee-on-transfer ERC-20 contract on Ethereum with your wallet as the creator address."],
-          ["Liquidity seeded", "Subframe seeds an initial Uniswap V2 WETH pool so the token is immediately tradable."],
-          ["Fees flow forever", "Every transfer triggers a 1% fee split: 0.5% to your wallet, 0.5% to the protocol treasury."],
+          ["Upload image", "Upload any JPG, PNG, WebP, or GIF during the claim step. Subframe stores it on IPFS and uses the CID as token URI."],
+          ["Edition created", "The protocol calls createArt on the SubframeArtProtocol contract, issuing a new token ID with your wallet as the creator address."],
+          ["Bonding curve goes live", "Price starts at 0.001 ETH and rises by 0.0001 ETH per edition minted. Anyone can mint or burn at the exact on-chain price at any time."],
+          ["Fees flow forever", "Every mint or burn triggers a 1% fee split: 0.5% to your wallet, 0.5% to the protocol treasury."],
         ].map(([label, desc], i) => (
           <Step key={label} number={i + 1} title={label}>
             {desc}
           </Step>
         ))}
         <H2 id="token-standard">Token standard</H2>
-        <P>Art tokens follow the ERC-20 standard with a fee-on-transfer extension. Each transfer deducts 1% from the transferred amount before crediting the recipient. The fee is automatically split and sent to the creator and the protocol treasury.</P>
-        <Callout type="info">Tokens use Uniswap V2, not V3. Uniswap V3 concentrated liquidity pools do not support fee-on-transfer tokens. V2 constant product pools handle the fee correctly.</Callout>
+        <P>Art editions follow the ERC-1155 multi-token standard. All editions share a single contract deployed by the protocol. Each creator gets a unique token ID within that contract. This design keeps deployment costs near zero and allows batch operations.</P>
+        <Callout type="info">Price is fully deterministic. mintPrice(tokenId) and burnPayout(tokenId) can be read on-chain at any time without relying on any oracle or off-chain service.</Callout>
         <H2 id="fees">Fee structure</H2>
         <div className="space-y-3 mb-6">
           {[
-            ["Transfer tax", "1% deducted on every transfer (buy, sell, or wallet-to-wallet)."],
-            ["Creator share", "0.5% goes directly to the creator wallet address on every transfer."],
+            ["Mint fee", "1% of the mint price is deducted on every edition minted."],
+            ["Burn fee", "1% of the burn payout is deducted on every edition burned."],
+            ["Creator share", "0.5% goes directly to the creator wallet address on every mint and burn."],
             ["Protocol share", "0.5% goes to the Subframe Protocol treasury."],
-            ["Deployment gas", "Zero. Subframe Protocol covers all deployment and seeding gas."],
+            ["Deployment gas", "Zero. Subframe Protocol covers all contract and token creation gas."],
           ].map(([label, desc]) => (
             <div key={label} className="flex gap-3 px-4 py-3.5 rounded-xl" style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.07)" }}>
               <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#CBFF4D" }} />
@@ -605,21 +606,23 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
   "/docs/art-trading": {
     breadcrumb: "ART PROTOCOL",
     sections: [
-      { id: "trading", title: "Trading your art" },
-      { id: "uniswap", title: "Uniswap V2" },
+      { id: "trading", title: "Minting and burning" },
+      { id: "curve", title: "Bonding curve" },
       { id: "royalties", title: "Creator royalties" },
     ],
     content: (
       <>
-        <PageTitle icon={BarChart2} title="Trading and Fees" description="How art tokens trade on Uniswap V2 and how creator royalties are distributed." />
-        <H2 id="trading">Trading your art</H2>
-        <P>Each art token has its own Uniswap V2 WETH liquidity pool on Ethereum. Anyone can buy or sell the token directly through Uniswap V2, any Uniswap V2 compatible DEX aggregator, or directly on-chain.</P>
-        <P>The token contract is a standard ERC-20 with a 1% fee-on-transfer. The fee is applied on every transfer regardless of the venue, including wallet-to-wallet sends.</P>
-        <H2 id="uniswap">Uniswap V2</H2>
-        <P>Art tokens use Uniswap V2 constant product AMM. The initial pool is seeded by the protocol. As more people buy and sell, the pool depth grows through natural trading activity.</P>
-        <Callout type="warning">Uniswap V3 does not support fee-on-transfer tokens. Always use a Uniswap V2 router or aggregator that routes through V2 pools when trading art tokens.</Callout>
+        <PageTitle icon={BarChart2} title="Minting, Burning, and Fees" description="How art editions are minted and burned on the bonding curve and how creator royalties are distributed." />
+        <H2 id="trading">Minting and burning editions</H2>
+        <P>Each art edition has a live mint price and burn payout derived from the bonding curve. Anyone can mint a new edition by sending the exact ETH amount shown on the profile page. Anyone who holds an edition can burn it to receive back the current burn payout in ETH.</P>
+        <P>All minting and burning happens directly through the SubframeArtProtocol smart contract on Ethereum mainnet. The profile page exposes Buy and Sell buttons with live prices pulled from the contract.</P>
+        <H2 id="curve">Bonding curve mechanics</H2>
+        <P>The price model is a linear bonding curve with a base price of 0.001 ETH and an increment of 0.0001 ETH per edition in circulation.</P>
+        <CodeBlock code={`mintPrice  = 0.001 + (supply * 0.0001) ETH\nburnPayout = mintPrice - 1% fee`} language="formula" />
+        <P>Price rises as more editions are minted and falls as editions are burned. There is no liquidity pool and no external market maker. The contract itself is the market.</P>
+        <Callout type="info">Because price is determined by supply alone, minting and burning are always available regardless of market conditions. There is no slippage and no liquidity risk.</Callout>
         <H2 id="royalties">Creator royalties</H2>
-        <P>Royalties are trustless and automatic. The creator address is hardcoded at deployment time and cannot be changed. Every transfer sends 0.5% of the transfer amount directly to the creator wallet. No claim step is needed. No platform intermediary holds the funds.</P>
+        <P>Royalties are trustless and automatic. The creator address is recorded at token creation time and cannot be changed. Every mint or burn sends 0.5% of the transaction value directly to the creator wallet. No claim step is needed. No platform intermediary holds the funds.</P>
       </>
     ),
   },

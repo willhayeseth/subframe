@@ -380,6 +380,31 @@ components:
         status:
           type: string
           enum: [pending, active, linked]
+        ensTx1Hash:
+          type: ["string", "null"]
+        ensTx2Hash:
+          type: ["string", "null"]
+        ensTx3Hash:
+          type: ["string", "null"]
+        ensTx4Hash:
+          type: ["string", "null"]
+        tokenStatus:
+          type: string
+          enum: [none, deploying, deployed, failed]
+        tokenAddress:
+          type: ["string", "null"]
+        tokenSymbol:
+          type: ["string", "null"]
+        tokenName:
+          type: ["string", "null"]
+        tokenDeployTxHash:
+          type: ["string", "null"]
+        uniswapPairAddress:
+          type: ["string", "null"]
+        uniswapLiquidityTxHash:
+          type: ["string", "null"]
+        artTokenId:
+          type: ["string", "null"]
         claimedAt:
           type: string
           format: date-time
@@ -395,6 +420,18 @@ components:
         - avatarUrl
         - bio
         - status
+        - ensTx1Hash
+        - ensTx2Hash
+        - ensTx3Hash
+        - ensTx4Hash
+        - tokenStatus
+        - tokenAddress
+        - tokenSymbol
+        - tokenName
+        - tokenDeployTxHash
+        - uniswapPairAddress
+        - uniswapLiquidityTxHash
+        - artTokenId
         - claimedAt
         - updatedAt
 
