@@ -33,7 +33,6 @@ function TelegramIcon({ className }: { className?: string }) {
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/explore", label: "Registry" },
-  { href: "/analyze", label: "AI Analyzer" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -288,7 +287,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex gap-6 text-sm text-white/30">
             <Link href="/explore"><span className="hover:text-white cursor-pointer transition-colors">Registry</span></Link>
-            <Link href="/analyze"><span className="hover:text-white cursor-pointer transition-colors">AI Analyzer</span></Link>
             <Link href="/claim"><span className="hover:text-white cursor-pointer transition-colors">Claim</span></Link>
           </div>
         </div>
