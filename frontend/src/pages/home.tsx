@@ -305,9 +305,9 @@ export default function Home() {
                 className="flex lg:hidden flex-wrap gap-8 mt-8 pt-6 border-t border-white/8"
               >
                 {[
-                  { v: stats.totalSubdomains, l: "Claimed" },
+                  { v: stats.totalSubdomains, l: "Subdomains" },
                   { v: stats.activeSubdomains, l: "Active" },
-                  { v: stats.linkedToIPFS, l: "IPFS Live" },
+                  { v: 0, l: "Art" },
                 ].map((s) => (
                   <div key={s.l}>
                     <div className="text-3xl font-black font-mono text-[#CBFF4D]">{s.v}</div>
@@ -343,9 +343,9 @@ export default function Home() {
             {stats && (
               <div className="flex items-center gap-8 pt-4 border-t border-white/8">
                 {[
-                  { v: stats.totalSubdomains, l: "Claimed" },
+                  { v: stats.totalSubdomains, l: "Subdomains" },
                   { v: stats.activeSubdomains, l: "Active" },
-                  { v: stats.linkedToIPFS, l: "IPFS Live" },
+                  { v: 0, l: "Art" },
                 ].map((s) => (
                   <div key={s.l}>
                     <div className="text-3xl font-black font-mono text-[#CBFF4D] leading-none">{s.v}</div>
