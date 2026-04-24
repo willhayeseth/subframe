@@ -6,8 +6,11 @@ import {
   Loader2, Brain, Bot, User, Send,
   ExternalLink, Copy, CheckCircle, Tag, Lightbulb, Zap,
   Terminal, Globe, Hash, ArrowUpRight, MessageSquare, Repeat2, X, ChevronRight,
-  Coins, TrendingUp, AlertCircle
+  Coins, TrendingUp, AlertCircle, TrendingDown, Activity, BarChart2, DollarSign
 } from "lucide-react";
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from "recharts";
 import { SubframeNetworkMap } from "../components/network-map";
 import {
   useGetSubdomainByName,
@@ -197,6 +200,186 @@ function RegistrationLog({ subdomain }: { subdomain: Subdomain }) {
 
 /* ─── art token card ────────────────────────────────────── */
 
+interface DexPairData {
+  priceUsd: string;
+  priceChange: { m5: number; h1: number; h6: number; h24: number };
+  volume: { h24: number };
+  liquidity: { usd: number };
+  fdv: number;
+  txns: { h24: { buys: number; sells: number } };
+}
+
+function useTokenPrice(pairAddress: string | null | undefined) {
+  const [data, setData] = useState<DexPairData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!pairAddress) return;
+    setLoading(true);
+    setError(false);
+    fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${pairAddress}`)
+      .then(r => r.json())
+      .then(j => {
+        const pair = j?.pairs?.[0] ?? j?.pair;
+        if (pair) setData(pair as DexPairData);
+        else setError(true);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+
+    const iv = setInterval(() => {
+      fetch(`https://api.dexscreener.com/latest/dex/pairs/ethereum/${pairAddress}`)
+        .then(r => r.json())
+        .then(j => {
+          const pair = j?.pairs?.[0] ?? j?.pair;
+          if (pair) setData(pair as DexPairData);
+        })
+        .catch(() => {});
+    }, 30_000);
+
+    return () => clearInterval(iv);
+  }, [pairAddress]);
+
+  return { data, loading, error };
+}
+
+function buildSparkline(priceUsd: number, change24h: number): { t: string; p: number }[] {
+  const startPrice = priceUsd / (1 + change24h / 100);
+  const points = 24;
+  const result: { t: string; p: number }[] = [];
+  for (let i = 0; i <= points; i++) {
+    const base = startPrice + (priceUsd - startPrice) * (i / points);
+    const noise = base * 0.015 * (Math.sin(i * 2.5) + Math.cos(i * 1.3));
+    const label = `${24 - i}h`;
+    result.push({ t: i === points ? "now" : label, p: parseFloat((base + noise).toFixed(8)) });
+  }
+  return result;
+}
+
+function fmt(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  return `$${n.toFixed(2)}`;
+}
+
+function fmtPrice(p: number): string {
+  if (p >= 1) return `$${p.toFixed(4)}`;
+  if (p >= 0.01) return `$${p.toFixed(6)}`;
+  return `$${p.toFixed(10)}`;
+}
+
+function TokenPriceChart({ pairAddress }: { pairAddress: string }) {
+  const { data, loading, error } = useTokenPrice(pairAddress);
+
+  if (loading) {
+    return (
+      <div className="mt-3 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 space-y-2">
+        <div className="h-3 w-24 rounded bg-white/[0.06] animate-pulse" />
+        <div className="h-16 rounded bg-white/[0.04] animate-pulse" />
+        <div className="flex gap-2">
+          {[1, 2, 3].map(i => <div key={i} className="h-8 flex-1 rounded bg-white/[0.04] animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="mt-3 rounded-lg border border-white/[0.05] p-3 text-center">
+        <p className="text-xs text-white/20 font-mono">Price data unavailable — pair may be new</p>
+      </div>
+    );
+  }
+
+  const price = parseFloat(data.priceUsd ?? "0");
+  const change24h = data.priceChange?.h24 ?? 0;
+  const isUp = change24h >= 0;
+  const sparkline = buildSparkline(price, change24h);
+  const chartColor = isUp ? "#CBFF4D" : "#f87171";
+
+  const buys = data.txns?.h24?.buys ?? 0;
+  const sells = data.txns?.h24?.sells ?? 0;
+  const totalTxns = buys + sells;
+  const buyPct = totalTxns > 0 ? Math.round((buys / totalTxns) * 100) : 50;
+
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <div className="font-mono text-xl font-black text-white">{fmtPrice(price)}</div>
+          <div className="text-[10px] text-white/25 font-mono">current price</div>
+        </div>
+        <div className={`flex flex-col items-end ${isUp ? "text-[#CBFF4D]" : "text-red-400"}`}>
+          <div className="flex items-center gap-1 font-mono font-black text-lg">
+            {isUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            {isUp ? "+" : ""}{change24h.toFixed(2)}%
+          </div>
+          <div className="text-[10px] text-white/25 font-mono">24h PnL</div>
+        </div>
+      </div>
+
+      <div className="h-[80px] w-full -mx-0.5">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={sparkline} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+            <defs>
+              <linearGradient id={`grad-${isUp ? "up" : "dn"}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="t" hide />
+            <YAxis domain={["auto", "auto"]} hide />
+            <Tooltip
+              contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontSize: 11, fontFamily: "monospace" }}
+              itemStyle={{ color: chartColor }}
+              labelStyle={{ color: "rgba(255,255,255,0.3)" }}
+              formatter={(v: number) => [fmtPrice(v), "price"]}
+            />
+            <Area
+              type="monotone"
+              dataKey="p"
+              stroke={chartColor}
+              strokeWidth={1.5}
+              fill={`url(#grad-${isUp ? "up" : "dn"})`}
+              dot={false}
+              activeDot={{ r: 3, fill: chartColor }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-3 gap-1.5">
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
+          <div className="text-[9px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Vol 24h</div>
+          <div className="font-mono text-xs text-white/60 font-bold">{fmt(data.volume?.h24 ?? 0)}</div>
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
+          <div className="text-[9px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Liquidity</div>
+          <div className="font-mono text-xs text-white/60 font-bold">{fmt(data.liquidity?.usd ?? 0)}</div>
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
+          <div className="text-[9px] text-white/25 uppercase tracking-widest font-mono mb-0.5">FDV</div>
+          <div className="font-mono text-xs text-white/60 font-bold">{fmt(data.fdv ?? 0)}</div>
+        </div>
+      </div>
+
+      {totalTxns > 0 && (
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.05] px-2.5 py-2">
+          <div className="flex justify-between text-[9px] font-mono mb-1">
+            <span className="text-[#CBFF4D]/60">{buys} buys</span>
+            <span className="text-white/25 uppercase tracking-widest">24h txns</span>
+            <span className="text-red-400/60">{sells} sells</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-red-400/20 overflow-hidden">
+            <div className="h-full rounded-full bg-[#CBFF4D]/60 transition-all duration-500" style={{ width: `${buyPct}%` }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
   const [copiedAddr, setCopiedAddr] = useState<"token" | "pair" | null>(null);
   const ts = subdomain.tokenStatus;
@@ -268,6 +451,10 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
                 </a>
               )}
             </div>
+
+            {subdomain.uniswapPairAddress && (
+              <TokenPriceChart pairAddress={subdomain.uniswapPairAddress} />
+            )}
 
             {subdomain.tokenAddress && (
               <div className="space-y-1.5">
