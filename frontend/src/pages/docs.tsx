@@ -562,15 +562,15 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
     ],
     content: (
       <>
-        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-20 token on Base with built-in creator royalties." />
+        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-20 token on Ethereum with built-in creator royalties." />
         <Callout type="success">Subframe Protocol pays all gas fees for token deployment. Creators pay nothing.</Callout>
         <H2 id="overview">Overview</H2>
-        <P>When you upload a profile image during the claim flow, Subframe Protocol deploys a fee-on-transfer ERC-20 token on Base representing your art. The token is immediately seeded with an initial Uniswap V2 liquidity pool and is tradable by anyone.</P>
+        <P>When you upload a profile image during the claim flow, Subframe Protocol deploys a fee-on-transfer ERC-20 token on Ethereum representing your art. The token is immediately seeded with an initial Uniswap V2 liquidity pool and is tradable by anyone.</P>
         <P>Your image is stored permanently on IPFS and attached to the token metadata. The token contract references your ENS subdomain so ownership and creator identity are fully on-chain.</P>
         <H2 id="how-it-works">How it works</H2>
         {[
           ["Upload image", "Upload any JPG, PNG, WebP, or GIF during the claim step. Subframe stores it on IPFS."],
-          ["Token deployed", "The protocol deploys a fee-on-transfer ERC-20 contract on Base with your wallet as the creator address."],
+          ["Token deployed", "The protocol deploys a fee-on-transfer ERC-20 contract on Ethereum with your wallet as the creator address."],
           ["Liquidity seeded", "Subframe seeds an initial Uniswap V2 WETH pool so the token is immediately tradable."],
           ["Fees flow forever", "Every transfer triggers a 1% fee split: 0.5% to your wallet, 0.5% to the protocol treasury."],
         ].map(([label, desc], i) => (
@@ -613,7 +613,7 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
       <>
         <PageTitle icon={BarChart2} title="Trading and Fees" description="How art tokens trade on Uniswap V2 and how creator royalties are distributed." />
         <H2 id="trading">Trading your art</H2>
-        <P>Each art token has its own Uniswap V2 WETH liquidity pool on Base. Anyone can buy or sell the token directly through Uniswap V2, any Uniswap V2 compatible DEX aggregator, or directly on-chain.</P>
+        <P>Each art token has its own Uniswap V2 WETH liquidity pool on Ethereum. Anyone can buy or sell the token directly through Uniswap V2, any Uniswap V2 compatible DEX aggregator, or directly on-chain.</P>
         <P>The token contract is a standard ERC-20 with a 1% fee-on-transfer. The fee is applied on every transfer regardless of the venue, including wallet-to-wallet sends.</P>
         <H2 id="uniswap">Uniswap V2</H2>
         <P>Art tokens use Uniswap V2 constant product AMM. The initial pool is seeded by the protocol. As more people buy and sell, the pool depth grows through natural trading activity.</P>

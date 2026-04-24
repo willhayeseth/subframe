@@ -1178,7 +1178,7 @@ export function StandaloneProfile() {
                   {subdomain.name} Art
                 </div>
                 <div className="text-xs text-white/30 font-mono mt-0.5">
-                  ERC-20 on Base
+                  ERC-20 on Ethereum
                 </div>
               </div>
               <div className="flex items-center gap-2">

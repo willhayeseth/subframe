@@ -6,7 +6,7 @@ const features = [
   {
     icon: ImageIcon,
     title: "Any Image Becomes a Token",
-    desc: "Upload any image when you claim your identity. A unique ERC-20 contract is deployed automatically on Base with your image pinned to IPFS as the token metadata.",
+    desc: "Upload any image when you claim your identity. A unique ERC-20 contract is deployed automatically on Ethereum with your image pinned to IPFS as the token metadata.",
   },
   {
     icon: Coins,
@@ -44,7 +44,7 @@ const steps = [
   {
     n: "02",
     t: "Protocol deploys your ERC-20",
-    d: "Subframe deploys a fee-on-transfer ERC-20 contract on Base with your image as metadata. The contract encodes your creator wallet for automatic royalties.",
+    d: "Subframe deploys a fee-on-transfer ERC-20 contract on Ethereum with your image as metadata. The contract encodes your creator wallet for automatic royalties.",
   },
   {
     n: "03",
@@ -62,7 +62,7 @@ const stats = [
   { v: "0.5%", l: "Creator royalty on every trade" },
   { v: "0%", l: "Gas cost for creators" },
   { v: "V2", l: "Uniswap V2 compatible" },
-  { v: "Base", l: "Deployed on Base chain" },
+  { v: "L1", l: "Deployed on Ethereum mainnet" },
 ];
 
 export default function ArtProtocol() {
@@ -170,7 +170,7 @@ export default function ArtProtocol() {
             <div className="space-y-3">
               {[
                 "Image pinned to IPFS as token metadata",
-                "ERC-20 deployed on Base with your wallet as fee recipient",
+                "ERC-20 deployed on Ethereum with your wallet as fee recipient",
                 "Initial ETH pool seeded by protocol on Uniswap V2",
                 "0.5% of every transfer goes to your wallet instantly",
               ].map((point) => (
