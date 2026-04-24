@@ -13,7 +13,7 @@ export interface DocPage {
   id: string;
   path: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   section: string;
   badge?: string;
   children?: DocPage[];

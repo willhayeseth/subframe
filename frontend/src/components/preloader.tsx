@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 const COLS = 10;
 const ROWS = 10;
@@ -97,33 +97,33 @@ export function Preloader({ onDone }: PreloaderProps) {
     };
   }, [triggerExit]);
 
-  const blockVariants = {
+  const blockVariants: Variants = {
     hidden: { scale: 0, opacity: 0, borderRadius: "50%" },
     visible: (i: number) => ({
       scale: 1,
       opacity: 1,
       borderRadius: "3px",
-      transition: { delay: waveDelay(i), duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+      transition: { delay: waveDelay(i), duration: 0.2, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
     }),
     exit: (i: number) => ({
       scale: 0,
       opacity: 0,
       borderRadius: "50%",
-      transition: { delay: waveDelayExit(TOTAL - 1 - i), duration: 0.15, ease: [0.7, 0, 0.84, 0] },
+      transition: { delay: waveDelayExit(TOTAL - 1 - i), duration: 0.15, ease: [0.7, 0, 0.84, 0] as [number, number, number, number] },
     }),
   };
 
-  const logoVariants = {
+  const logoVariants: Variants = {
     hidden: { scale: 0.6, opacity: 0 },
     visible: {
       scale: 1,
       opacity: 1,
-      transition: { duration: LOGO_APPEAR_DURATION, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: LOGO_APPEAR_DURATION, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
     },
     exit: {
       scale: 0.6,
       opacity: 0,
-      transition: { delay: waveDelayExit(TOTAL - 1) + 0.1, duration: 0.25, ease: [0.7, 0, 0.84, 0] },
+      transition: { delay: waveDelayExit(TOTAL - 1) + 0.1, duration: 0.25, ease: [0.7, 0, 0.84, 0] as [number, number, number, number] },
     },
   };
 

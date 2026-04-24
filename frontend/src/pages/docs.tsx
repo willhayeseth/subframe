@@ -73,7 +73,7 @@ function Step({ number, title, children }: { number: number; title: string; chil
   );
 }
 
-function PageTitle({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }) {
+function PageTitle({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; title: string; description: string }) {
   return (
     <div className="mb-10">
       <div className="flex items-center gap-3 mb-4">
