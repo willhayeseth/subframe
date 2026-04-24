@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, ExternalLink, Layers, Globe } from "lucide-react";
 import { useListSubdomains } from "@workspace/api-client-react";
@@ -40,6 +40,16 @@ export default function Explore() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "linked" | "active" | "pending">("all");
   const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+      document.documentElement.style.overflow = "";
+    };
+  }, []);
 
   const filtered = (subdomains ?? []).filter((s: Subdomain) => {
     const q = search.toLowerCase();
