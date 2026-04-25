@@ -1,27 +1,13 @@
 {
-  "updated": "2026-04-24T10:05:01.459Z",
-  "count": 3,
+  "updated": "2026-04-25T10:22:02.275Z",
+  "count": 1,
   "members": [
     {
-      "name": "test",
-      "ensFullName": "test.subframe.eth",
-      "walletAddress": "0xc684F09183D64089546130c11a248048Cc893290",
-      "ipfsCid": "bafybeigwumcskoti3hqh5httkorohfbzvvfowdyovg77g4yzt2b5rerp7u",
-      "linkedAt": "2026-04-22T10:55:52.739Z"
-    },
-    {
-      "name": "name",
-      "ensFullName": "name.subframe.eth",
-      "walletAddress": "0x4576e3Ae3Ae1a2224A72eA4Be61881f0aCb39086",
-      "ipfsCid": "bafybeigvs5sy57m23ya63opxfxt6vqayrc5t2whdkerrebqsexxeg2ji7i",
-      "linkedAt": "2026-04-22T11:08:47.872Z"
-    },
-    {
-      "name": "you",
-      "ensFullName": "you.subframe.eth",
-      "walletAddress": "0xdFE4620b751C646fe553C8A91182882Dc1FA231a",
-      "ipfsCid": "bafybeih6yk6j4bftqqrxbll44cgvufvd32ktape6nm74gz3zejtztnkwpa",
-      "linkedAt": "2026-04-24T10:05:01.272Z"
+      "name": "test1",
+      "ensFullName": "test1.subframe.eth",
+      "walletAddress": "0xA8944aeA1D6c684Cf0DaB38C636a61ED325De6Ca",
+      "ipfsCid": "bafybeihbeaabivredrsdjhasfo6gf4cbvf3iimq6c2pce3nsmbauqm3cxi",
+      "linkedAt": "2026-04-25T10:22:02.122Z"
     }
   ]
 }
