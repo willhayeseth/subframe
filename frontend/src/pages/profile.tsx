@@ -739,9 +739,9 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e0e] p-6 flex items-center gap-2">
+      <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e0e] p-6 flex items-center gap-2 flex-1 min-h-0">
         <Loader2 className="w-4 h-4 animate-spin text-[#CBFF4D]/50" />
-        <span className="text-sm text-white/30 font-mono">Loading art token...</span>
+        <span className="text-sm text-white/30 font-mono">Loading art collection...</span>
       </div>
     );
   }
