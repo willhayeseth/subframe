@@ -20,6 +20,7 @@ import AiAnalysis from "@/pages/ai-analysis";
 import AiChat from "@/pages/ai-chat";
 import Collection from "@/pages/collection";
 import ArtProtocol from "@/pages/art-protocol";
+import ArtDemo from "@/pages/art-demo";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/ai-chat" component={withLayout(AiChat)} />
       <Route path="/collection" component={withLayout(Collection)} />
       <Route path="/art-protocol" component={withLayout(ArtProtocol)} />
+      <Route path="/art-demo" component={ArtDemo} />
       <Route path="/:name" component={StandaloneProfile} />
       <Route component={withLayout(NotFound)} />
     </Switch>

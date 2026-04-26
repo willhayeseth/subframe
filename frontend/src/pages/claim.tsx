@@ -157,26 +157,26 @@ export default function Claim() {
   ];
 
   return (
-    <div className="flex-1 px-5 py-16 bg-[#0C0C0C]">
-      <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+    <div className="flex-1 px-5 py-8 bg-[#0C0C0C]">
+      <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-12 items-start">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#CBFF4D]/30 bg-[#CBFF4D]/8 text-[#CBFF4D] text-xs font-black uppercase tracking-widest mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#CBFF4D]/30 bg-[#CBFF4D]/8 text-[#CBFF4D] text-xs font-black uppercase tracking-widest mb-4">
             <Zap className="w-3.5 h-3.5 fill-current" />
             Claim Your Identity
           </div>
-          <h1 className="text-5xl font-black text-white leading-tight mb-5">
+          <h1 className="text-4xl font-black text-white leading-tight mb-4">
             Your name on{" "}
             <span className="text-[#CBFF4D]">Ethereum</span>
           </h1>
-          <p className="text-white/50 text-lg leading-relaxed mb-8">
+          <p className="text-white/50 text-base leading-relaxed mb-6">
             Register your permanent <span className="font-mono text-[#CBFF4D]">name.subframe.eth</span> subdomain and get an AI-powered Web3 profile page.
           </p>
 
-          <ul className="space-y-3">
+          <ul className="space-y-2.5">
             {perks.map((perk) => (
               <li key={perk} className="flex items-center gap-3 text-white/65">
                 <div className="w-5 h-5 rounded-full bg-[#CBFF4D]/10 border border-[#CBFF4D]/25 flex items-center justify-center shrink-0">
@@ -187,8 +187,8 @@ export default function Claim() {
             ))}
           </ul>
 
-          <div className="mt-10 p-5 rounded-2xl border border-white/8 bg-white/[0.025] flex items-center gap-4">
-            <Shield className="w-8 h-8 text-[#CBFF4D] shrink-0" />
+          <div className="mt-6 p-4 rounded-2xl border border-white/8 bg-white/[0.025] flex items-center gap-4">
+            <Shield className="w-7 h-7 text-[#CBFF4D] shrink-0" />
             <div>
               <div className="text-sm font-semibold text-white">No gas required</div>
               <div className="text-xs text-white/40 mt-0.5">Registration is completely free on Subframe</div>
@@ -201,12 +201,12 @@ export default function Claim() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.15, duration: 0.6 }}
         >
-          <div className="relative p-8 rounded-3xl border border-white/8 bg-white/[0.025] overflow-hidden">
+          <div className="relative p-6 rounded-3xl border border-white/8 bg-white/[0.025] overflow-hidden">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/25 to-transparent" />
 
-            <h2 className="text-xl font-bold text-white mb-6">Register Subdomain</h2>
+            <h2 className="text-lg font-bold text-white mb-4">Register Subdomain</h2>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Step 1: Connect Wallet */}
               <div>
                 <label className="block text-sm font-medium text-white/60 mb-2">
@@ -274,7 +274,7 @@ export default function Claim() {
               {/* Step 3: Profile Picture */}
               <div>
                 <label className="block text-sm font-medium text-white/60 mb-2">
-                  <span className="font-mono text-[#CBFF4D]/60 text-xs mr-1">03</span> Profile Picture <span className="text-white/25 font-normal">(optional)</span>
+                  <span className="font-mono text-[#CBFF4D]/60 text-xs mr-1">03</span> Profile Picture
                 </label>
                 <div className="flex items-center gap-4">
                   <button
@@ -334,16 +334,16 @@ export default function Claim() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tell the world who you are on-chain..."
-                  rows={3}
+                  rows={2}
                   disabled={!isConnected}
-                  className="w-full px-4 py-3.5 rounded-xl border border-white/8 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/40 focus:ring-1 focus:ring-[#CBFF4D]/15 transition-all resize-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-xl border border-white/8 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/40 focus:ring-1 focus:ring-[#CBFF4D]/15 transition-all resize-none disabled:opacity-40 disabled:cursor-not-allowed"
                 />
               </div>
 
               <div className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.04] p-4">
                 <p className="text-xs text-white/55 leading-relaxed mb-3">
-                  Your uploaded image will automatically be published as a tradable ERC-1155 edition on a bonding curve on Ethereum. You earn{" "}
-                  <span className="text-[#CBFF4D] font-bold">0.5%</span> from every mint and burn. Subframe takes 0.5%. The 1% fee applies to every mint and burn.
+                  Your uploaded image becomes an ERC-404 art token tradeable directly on Uniswap via a V4 hook. No bonding curve, no separate liquidity pool needed. You earn{" "}
+                  <span className="text-[#CBFF4D] font-bold">0.5%</span> from every trade. Subframe takes 0.5%. Each buyer gets a unique art variation.
                 </p>
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div
@@ -370,7 +370,7 @@ export default function Claim() {
                 data-testid="btn-submit-claim"
                 type="submit"
                 disabled={!isAvailable || !isConnected || createSubdomain.isPending || avatarUploading || !artConsent}
-                className="w-full flex items-center justify-center gap-2.5 py-4 btn-lime rounded-xl font-bold text-black disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 btn-lime rounded-xl font-bold text-black disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {createSubdomain.isPending ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Claiming...</>

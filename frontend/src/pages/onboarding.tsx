@@ -230,7 +230,7 @@ export default function Onboarding() {
                   <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-[#CBFF4D]/5 border border-[#CBFF4D]/15">
                     <CheckCircle className="w-3.5 h-3.5 text-[#CBFF4D]/60 shrink-0" />
                     <span className="text-xs text-white/50 font-mono">
-                      Transaction sent — <a href={`https://etherscan.io/tx/${nameTxHash}`} target="_blank" rel="noopener noreferrer" className="text-[#CBFF4D]/60 hover:text-[#CBFF4D] underline underline-offset-2">view on Etherscan</a>
+                      Transaction sent. <a href={`https://etherscan.io/tx/${nameTxHash}`} target="_blank" rel="noopener noreferrer" className="text-[#CBFF4D]/60 hover:text-[#CBFF4D] underline underline-offset-2">view on Etherscan</a>
                     </span>
                   </div>
                   <button

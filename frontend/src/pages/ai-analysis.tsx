@@ -68,14 +68,14 @@ export default function AiAnalysis() {
 
       <section className="px-5 md:px-10 py-20 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative order-last lg:order-first">
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: false }} className="relative order-last lg:order-first">
             <div className="absolute inset-0 rounded-3xl bg-[#161616] border border-white/5" />
             <div className="relative flex items-center justify-center p-12">
               <div className="absolute inset-0 rounded-3xl bg-[#CBFF4D]/3 blur-3xl" />
               <img src={aiBrain} alt="AI brain 3D" className="relative w-64 h-64 object-contain drop-shadow-2xl animate-float" />
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: false }}>
             <div className="text-sm font-mono text-white/30 mb-4 tracking-wider">/ What we analyze</div>
             <h2 className="text-4xl md:text-5xl font-black leading-tight mb-4">
               Every signal,<br />
@@ -111,7 +111,7 @@ export default function AiAnalysis() {
                 key={title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: false }}
                 transition={{ delay: i * 0.1 }}
                 className="p-6 rounded-2xl border border-white/8 bg-white/[0.02] hover:border-[#CBFF4D]/20 transition-all"
               >
@@ -146,7 +146,7 @@ export default function AiAnalysis() {
                 key={n}
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: false }}
                 transition={{ delay: i * 0.08 }}
                 className="flex items-start gap-6 p-6 rounded-2xl border border-white/8 bg-white/[0.02]"
               >
