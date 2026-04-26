@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowDownUp, Loader2, CheckCircle, ExternalLink, AlertCircle, ChevronDown } from "lucide-react";
-import { useAccount, useReadContract, useWriteContract, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useBalance, useReadContract, useWriteContract, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { parseAbi, parseEther, parseUnits } from "viem";
 import { getBaseUrl } from "@workspace/api-client-react";
@@ -69,6 +69,11 @@ export function TradeModal({
     } catch { return null; }
   })();
 
+  const { data: ethBalance, refetch: refetchEthBalance } = useBalance({
+    address: userAddress,
+    query: { enabled: !!userAddress && open, refetchInterval: open ? 10000 : false },
+  });
+
   const { data: tokenBalance, refetch: refetchBalance } = useReadContract({
     address: tokenAddr,
     abi: ERC20_ABI,
@@ -76,7 +81,7 @@ export function TradeModal({
     args: userAddress ? [userAddress] : undefined,
     query: {
       enabled: !!userAddress && !!tokenAddress && open,
-      refetchInterval: open ? 12000 : false,
+      refetchInterval: open ? 10000 : false,
     },
   });
 
@@ -102,6 +107,7 @@ export function TradeModal({
 
   useEffect(() => {
     if (isConfirmed) {
+      refetchEthBalance();
       refetchBalance();
       refetchErc20Allow();
       refetchPermit2Allow();
@@ -236,6 +242,18 @@ export function TradeModal({
                   <span className="text-[10px] text-white/35 font-mono uppercase tracking-widest">
                     {tab === "buy" ? "You pay" : "You sell"}
                   </span>
+                  {tab === "buy" && isConnected && ethBalance && (
+                    <button
+                      onClick={() => {
+                        const maxEth = ethBalance.value > parseEther("0.001") ? ethBalance.value - parseEther("0.001") : 0n;
+                        setAmount((Number(maxEth) / 1e18).toFixed(6));
+                        setError(null);
+                      }}
+                      className="text-[10px] text-[#CBFF4D]/50 hover:text-[#CBFF4D] transition-colors font-mono"
+                    >
+                      Balance: {(Number(ethBalance.value) / 1e18).toFixed(4)} ETH
+                    </button>
+                  )}
                   {tab === "sell" && isConnected && (
                     <button
                       onClick={() => { setAmount(tokenBalanceStr); setError(null); }}
