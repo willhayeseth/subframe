@@ -119,7 +119,7 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Create 404.html for SPA routing
-        run: cp frontend/dist/public/index.html frontend/dist/public/404.html
+        run: cp artifacts/subframe/dist/public/index.html artifacts/subframe/dist/public/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -127,7 +127,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist/public
+          path: artifacts/subframe/dist/public
 
       - name: Deploy to GitHub Pages
         id: deployment
@@ -173,11 +173,10 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Pin to IPFS & update ENS contenthash
-        run: node frontend/scripts/pin-to-ipfs.mjs
+        run: node artifacts/subframe/scripts/pin-to-ipfs.mjs
         env:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
-          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          ENS_PRIVATE_KEY: ${{ secrets.ENS_PRIVATE_KEY }}
 
   build-backend:
     name: Build Backend
