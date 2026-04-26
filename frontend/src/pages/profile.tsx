@@ -358,7 +358,7 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
       <div className="rounded-xl border border-white/[0.05] bg-[#080808] overflow-hidden">
         <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
           <Coins className="w-3.5 h-3.5 text-white/20" />
-          <span className="text-xs font-mono text-white/20 uppercase tracking-wider">Art Token</span>
+          <span className="text-xs font-mono text-white/20 uppercase tracking-wider">Art Collection</span>
           <div className="ml-auto flex items-center gap-1.5 font-mono text-xs text-white/20">
             <span>coming soon</span>
           </div>
@@ -377,7 +377,7 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/20 to-transparent" />
       <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
         <Coins className="w-3.5 h-3.5 text-[#CBFF4D]/60" />
-        <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Art Token</span>
+        <span className="text-xs font-mono text-white/30 uppercase tracking-wider">Art Collection</span>
         <div className="ml-auto flex items-center gap-1.5 font-mono text-xs">
           {ts === "deployed" ? (
             <>
@@ -747,10 +747,10 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden flex flex-col flex-1 min-h-0">
+      <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
         <div>
-          <div className="text-sm font-bold text-white/80">{subdomainName} Art Token</div>
+          <div className="text-sm font-bold text-white/80">{subdomainName} Art Collection</div>
           <div className="text-xs text-white/30 font-mono mt-0.5">ERC-404 on Ethereum</div>
         </div>
         <div className="flex items-center gap-2">
@@ -769,6 +769,7 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
         </div>
       </div>
 
+      <div className="flex-1 overflow-y-auto min-h-0">
       {generating && variations.length === 0 ? (
         <div className="p-6 space-y-3">
           <div className="flex items-center gap-2.5">
@@ -822,6 +823,7 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
           </div>
         </>
       )}
+      </div>
 
       <AnimatePresence>
         {selected && (
@@ -1810,25 +1812,18 @@ function StandaloneProfileLayout({
       {/* ═══ DESKTOP LAYOUT (lg+): 2 columns, both fixed height ═══ */}
       <div className="relative z-10 hidden lg:flex flex-1 min-h-0 gap-0">
 
-        {/* Left 60%: Profile + Art — scrolls inside */}
-        <div className="w-[60%] shrink-0 overflow-y-auto px-6 py-5 space-y-5">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        {/* Left 60%: Profile fixed, Art fills remaining and scrolls inside */}
+        <div className="w-[60%] shrink-0 flex flex-col px-6 py-5 gap-5 min-h-0">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="shrink-0">
             {ProfileCard}
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }}>
-            <h2 className="text-xs font-bold text-white/30 mb-3 flex items-center gap-2 uppercase tracking-widest">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08 }} className="flex-1 min-h-0 flex flex-col">
+            <h2 className="text-xs font-bold text-white/30 mb-3 flex items-center gap-2 uppercase tracking-widest shrink-0">
               <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
-              Art Token
+              Art Collection
             </h2>
             <ArtTokenGallery subdomainName={subdomain.name} tokenAddress={subdomain.tokenAddress} isOwnProfile={isOwnProfile} />
           </motion.div>
-          <div className="pt-4 pb-2 flex items-center justify-center border-t border-white/[0.04]">
-            <a href="https://subframe.network" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs text-white/20 hover:text-[#CBFF4D]/50 transition-colors group">
-              <img src="/logo-subframe.png" className="w-3.5 h-3.5 opacity-40 group-hover:opacity-70 transition-opacity" alt="Subframe" />
-              Built on Subframe
-            </a>
-          </div>
         </div>
 
         {/* Right 40%: 3-tab card — fixed, tab content scrolls */}
@@ -1899,7 +1894,7 @@ function StandaloneProfileLayout({
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
               <h2 className="text-xs font-bold text-white/30 mb-3 flex items-center gap-2 uppercase tracking-widest">
                 <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
-                Art Token
+                Art Collection
               </h2>
               <ArtTokenGallery subdomainName={subdomain.name} tokenAddress={subdomain.tokenAddress} isOwnProfile={isOwnProfile} />
             </motion.div>
