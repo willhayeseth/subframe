@@ -58,15 +58,22 @@ if (!cid) { console.error("[IPFS] All pin attempts failed"); process.exit(1); }
 console.log(`[IPFS] Pinned! CID: ${cid}`);
 
 console.log(`[ENS] Calling backend to update subframe.eth contenthash...`);
-const ensRes = await fetch(`${BACKEND_URL}/api/admin/update-ens`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json", "x-admin-key": ADMIN_SECRET },
-  body: JSON.stringify({ cid }),
-});
-const ensData = await ensRes.json();
-if (!ensRes.ok || !ensData.ok) {
-  console.error("[ENS] Backend update failed:", JSON.stringify(ensData));
-  process.exit(1);
+try {
+  const ensRes = await fetch(`${BACKEND_URL}/api/admin/update-ens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-admin-key": ADMIN_SECRET },
+    body: JSON.stringify({ cid }),
+  });
+  const ensData = await ensRes.json();
+  if (!ensRes.ok || !ensData.ok) {
+    console.warn("[ENS] Backend update failed (non-fatal):", JSON.stringify(ensData));
+    console.warn("[ENS] CID pinned but ENS not yet updated. Run manually once contracts are deployed.");
+  } else {
+    console.log(`[ENS] Done! TX: ${ensData.tx}`);
+    console.log(`\nsubframe.eth now points to ${cid}`);
+  }
+} catch (err) {
+  console.warn("[ENS] Could not reach backend (non-fatal):", err.message);
+  console.warn("[ENS] CID pinned but ENS not yet updated.");
 }
-console.log(`[ENS] Done! TX: ${ensData.tx}`);
-console.log(`\nsubframe.eth now points to ${cid}`);
+console.log(`\n[IPFS] CID: ${cid}`);
