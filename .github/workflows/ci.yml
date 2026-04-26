@@ -29,10 +29,10 @@ jobs:
 
       - name: Build packages (required for project references)
         run: |
-          pnpm exec tsc --build lib/db
-          pnpm exec tsc --build lib/api-zod
-          pnpm exec tsc --build lib/api-client-react
-          pnpm exec tsc --build lib/integrations-openai-ai-server
+          pnpm --filter @workspace/db exec tsc --build .
+          pnpm --filter @workspace/api-zod exec tsc --build .
+          pnpm --filter @workspace/api-client-react exec tsc --build .
+          pnpm --filter @workspace/integrations-openai-ai-server exec tsc --build .
 
       - name: Type check all packages
         run: pnpm -r --if-present run typecheck
@@ -60,9 +60,9 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build lib/db
-          pnpm exec tsc --build lib/api-zod
-          pnpm exec tsc --build lib/api-client-react
+          pnpm --filter @workspace/db exec tsc --build .
+          pnpm --filter @workspace/api-zod exec tsc --build .
+          pnpm --filter @workspace/api-client-react exec tsc --build .
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -106,9 +106,9 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build lib/db
-          pnpm exec tsc --build lib/api-zod
-          pnpm exec tsc --build lib/api-client-react
+          pnpm --filter @workspace/db exec tsc --build .
+          pnpm --filter @workspace/api-zod exec tsc --build .
+          pnpm --filter @workspace/api-client-react exec tsc --build .
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -160,9 +160,9 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build lib/db
-          pnpm exec tsc --build lib/api-zod
-          pnpm exec tsc --build lib/api-client-react
+          pnpm --filter @workspace/db exec tsc --build .
+          pnpm --filter @workspace/api-zod exec tsc --build .
+          pnpm --filter @workspace/api-client-react exec tsc --build .
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -202,8 +202,8 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build lib/db
-          pnpm exec tsc --build lib/api-zod
+          pnpm --filter @workspace/db exec tsc --build .
+          pnpm --filter @workspace/api-zod exec tsc --build .
 
       - name: Build backend
         run: pnpm --filter @workspace/api-server run build
