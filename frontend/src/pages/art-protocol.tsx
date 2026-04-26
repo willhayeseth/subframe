@@ -5,18 +5,18 @@ import { ArrowUpRight, ChevronRight, ImageIcon, Coins, TrendingUp, Zap, Percent,
 const features = [
   {
     icon: ImageIcon,
-    title: "Any Image Becomes an Edition",
-    desc: "Upload any image when you claim your identity. A unique ERC-1155 token ID is minted on the shared SubframeArtProtocol contract with your image pinned to IPFS as token metadata.",
+    title: "Any Image Becomes a Tradable Token",
+    desc: "Upload any image when you claim your identity. A unique ERC-404 token is created via a Uniswap V4 hook with your image pinned to IPFS as the token metadata.",
   },
   {
     icon: BarChart2,
-    title: "Bonding Curve Pricing",
-    desc: "Price increases with every edition minted and falls as editions are burned. No liquidity pool or market maker needed. The curve is the market.",
+    title: "Native Uniswap V4 Liquidity",
+    desc: "Your token is immediately tradeable on Uniswap the moment it is created. No bonding curve, no separate liquidity pool to seed. The V4 hook handles it all.",
   },
   {
     icon: Percent,
-    title: "0.5% Creator Fee On Every Mint and Burn",
-    desc: "Every mint or burn carries a 1% fee split. Half goes to you as the creator (0.5%) and half to the protocol treasury (0.5%), forever.",
+    title: "0.5% Creator Fee On Every Trade",
+    desc: "Every trade carries a 1% fee split. Half goes to you as the creator (0.5%) and half to the protocol treasury (0.5%), forever.",
   },
   {
     icon: Zap,
@@ -25,13 +25,13 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: "On-Chain Price Discovery",
-    desc: "Price is deterministic and fully on-chain. Anyone can read the current mint or burn price directly from the contract at any time without relying on any off-chain oracle.",
+    title: "Real-Time Price Discovery",
+    desc: "Price is determined by Uniswap V4 market mechanics. Anyone can see the current token price directly from the pool at any time without relying on any off-chain oracle.",
   },
   {
     icon: Flame,
     title: "Tied To Your Identity",
-    desc: "Your art edition is permanently linked to your ENS subdomain. Your profile page shows the live bonding curve, current supply, and Buy and Sell buttons with real-time prices.",
+    desc: "Your art token is permanently linked to your ENS subdomain. Your profile page shows the live Uniswap price, current supply, and Buy and Sell buttons with real-time prices.",
   },
 ];
 
@@ -39,29 +39,29 @@ const steps = [
   {
     n: "01",
     t: "Upload your image",
-    d: "During claim, upload any image you own. JPEG, PNG, GIF, or SVG. It is pinned to IPFS instantly and becomes the cover art for your edition.",
+    d: "During claim, upload any image you own. JPEG, PNG, GIF, or SVG. It is pinned to IPFS instantly and becomes the cover art for your token.",
   },
   {
     n: "02",
-    t: "Protocol creates your ERC-1155 token",
-    d: "Subframe calls createArt on the shared SubframeArtProtocol contract. A new token ID is issued with your wallet encoded as the creator address.",
+    t: "Protocol creates your ERC-404 token",
+    d: "Subframe calls the Uniswap V4 hook contract. A new ERC-404 token is issued with your wallet encoded as the creator address.",
   },
   {
     n: "03",
-    t: "Bonding curve goes live",
-    desc: "The curve starts at 0.001 ETH per edition and rises by 0.0001 ETH for each edition minted. Anyone can mint or burn at the exact on-chain price.",
+    t: "Uniswap V4 pool goes live",
+    d: "The V4 hook initialises a liquidity pool for your token. Anyone can trade it on Uniswap immediately. No extra setup needed.",
   },
   {
     n: "04",
-    t: "Earn from every mint and burn",
-    d: "Every mint or burn triggers the 1% fee split. 0.5% is sent directly to your wallet. No claiming, no staking. It just arrives.",
+    t: "Earn from every trade",
+    d: "Every trade triggers the 1% fee split. 0.5% is sent directly to your wallet. No claiming, no staking. It just arrives.",
   },
 ];
 
 const stats = [
-  { v: "0.5%", l: "Creator fee on every mint and burn" },
+  { v: "0.5%", l: "Creator fee on every trade" },
   { v: "0%", l: "Gas cost for creators" },
-  { v: "1155", l: "ERC-1155 token standard" },
+  { v: "ERC-404", l: "Token standard" },
   { v: "L1", l: "Deployed on Ethereum mainnet" },
 ];
 
@@ -82,7 +82,7 @@ export default function ArtProtocol() {
             <span className="text-[#CBFF4D]">tradable art</span>
           </h1>
           <p className="text-xl text-white/50 leading-relaxed max-w-2xl mb-10">
-            Upload any image when you claim your Subframe identity. It is automatically issued as an ERC-1155 edition on a bonding curve. You earn 0.5% from every mint and burn, forever. Protocol pays the gas.
+            Upload any image when you claim your Subframe identity. It is automatically issued as an ERC-404 art token tradeable on Uniswap via a V4 hook. No separate liquidity pool needed, just native Uniswap liquidity from day one. You earn 0.5% from every trade, forever.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link href="/claim">
@@ -146,7 +146,7 @@ export default function ArtProtocol() {
 
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { v: "0.001", l: "Starting Price (ETH)" },
+                  { v: "V4 Hook", l: "Uniswap Liquidity" },
                   { v: "0.5%", l: "Creator Fee" },
                   { v: "0%", l: "Gas Cost" },
                 ].map((s) => (
@@ -166,14 +166,14 @@ export default function ArtProtocol() {
               <span className="text-[#CBFF4D]">editions out</span>
             </h2>
             <p className="text-white/45 text-lg leading-relaxed mb-8">
-              The Art Protocol converts any image into an ERC-1155 edition on a bonding curve. Price rises as more people mint and falls as people burn. No market maker, no liquidity pool. You upload and earn.
+              The Art Protocol converts any image into an ERC-404 token tradeable on Uniswap via a V4 hook. Price is set by real market demand. No market maker or seed liquidity required. You upload and earn.
             </p>
             <div className="space-y-3">
               {[
                 "Image pinned to IPFS as token metadata",
-                "ERC-1155 token ID created with your wallet as creator address",
-                "Bonding curve starts at 0.001 ETH, rises 0.0001 ETH per edition",
-                "0.5% of every mint and burn goes to your wallet instantly",
+                "ERC-404 token created with your wallet as creator address",
+                "Uniswap V4 pool initialised immediately, tradeable from day one",
+                "0.5% of every trade goes to your wallet instantly",
               ].map((point) => (
                 <div key={point} className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] shrink-0 mt-2" />
@@ -225,7 +225,7 @@ export default function ArtProtocol() {
             </h2>
           </div>
           <div className="space-y-4">
-            {steps.map(({ n, t, d, desc: stepDesc }, i) => (
+            {steps.map(({ n, t, d }, i) => (
               <motion.div
                 key={n}
                 initial={{ opacity: 0, x: -20 }}
@@ -237,7 +237,7 @@ export default function ArtProtocol() {
                 <div className="text-4xl font-black font-mono text-[#CBFF4D]/30 shrink-0 w-12 leading-none">{n}</div>
                 <div>
                   <h3 className="font-bold text-white text-lg mb-1">{t}</h3>
-                  <p className="text-sm text-white/45 leading-relaxed">{d ?? stepDesc}</p>
+                  <p className="text-sm text-white/45 leading-relaxed">{d}</p>
                 </div>
               </motion.div>
             ))}
@@ -252,7 +252,7 @@ export default function ArtProtocol() {
             <span className="text-[#CBFF4D]">on-chain income</span>
           </h2>
           <p className="text-white/40 text-lg mb-10">
-            Claim your Subframe identity, upload an image, and start earning from every edition minted. Zero cost to start.
+            Claim your Subframe identity, upload an image, and start earning from every trade. Zero cost to start.
           </p>
           <Link href="/claim">
             <button className="inline-flex items-center gap-2 px-10 py-5 btn-lime rounded-full text-lg font-black">

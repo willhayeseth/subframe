@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ArrowRight, ChevronRight, TrendingUp, Zap, CheckCircle2, Clock, Sparkles } from "lucide-react";
+import { ArrowUpRight, ChevronRight, TrendingUp, Zap, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { useGetSubdomainStats, useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 
@@ -267,7 +267,7 @@ export default function Home() {
             >
               Get your permanent{" "}
               <span className="font-mono text-white/70">name.subframe.eth</span>{" "}
-              subdomain with AI-powered wallet analysis, tradable on-chain art, IPFS profile hosting, on-chain AI chat, and a public Web3 identity that lives on Ethereum forever.
+              subdomain with AI-powered wallet analysis, tradable on-chain art, IPFS profile hosting, on-chain AI chat, and a verifiable Web3 identity that lives on Ethereum forever.
             </motion.p>
 
             <motion.div
@@ -276,22 +276,21 @@ export default function Home() {
               transition={{ delay: 0.35, duration: 0.5 }}
               className="flex flex-wrap items-center gap-4"
             >
+              <Link href="/claim">
+                <button
+                  data-testid="btn-claim-hero"
+                  className="flex items-center gap-2 px-8 py-4 btn-lime text-base font-black rounded-full"
+                >
+                  Claim Your Identity
+                  <ArrowUpRight className="w-5 h-5" />
+                </button>
+              </Link>
               <Link href="/docs">
                 <button
                   data-testid="btn-docs"
-                  className="flex items-center gap-2 px-8 py-4 btn-lime text-base font-black rounded-full"
-                >
-                  Documentation
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </Link>
-              <Link href="/explore">
-                <button
-                  data-testid="btn-explore"
                   className="flex items-center gap-2 px-8 py-4 btn-outline-lime text-base rounded-full"
                 >
-                  Browse Registry
-                  <ArrowRight className="w-4 h-4" />
+                  Documentation
                 </button>
               </Link>
             </motion.div>
@@ -411,7 +410,7 @@ export default function Home() {
           number="04"
           title="Turn your PFP into"
           titleAccent="tradable art"
-          desc="Upload any image when you claim your identity. It becomes an ERC-1155 token on a bonding curve. You earn 0.5% from every mint and burn, forever. Protocol pays the gas."
+          desc="Upload any image when you claim your identity. It becomes an ERC-404 token tradeable on Uniswap via a V4 hook. You earn 0.5% from every trade, forever. Each buyer gets a unique art variation."
           animation={<ArtAnim />}
           reverse
           ctaLabel="Start Creating"
@@ -585,9 +584,9 @@ export default function Home() {
               </h3>
               <ul className="space-y-3 flex-1">
                 {[
-                  "ERC-1155 bonding curve editions",
+                  "ERC-404 tokens on Uniswap V4",
                   "Buy and sell from any profile page",
-                  "Creator royalties on every mint and burn",
+                  "Creator royalties on every trade",
                   "On-chain AI Chat via XMTP",
                   "Copy Trader",
                 ].map((item) => (

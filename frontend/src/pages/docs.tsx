@@ -562,10 +562,10 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
     ],
     content: (
       <>
-        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-1155 edition on a bonding curve with built-in creator royalties." />
+        <PageTitle icon={Layers} title="Art Protocol" description="Every profile image on Subframe automatically becomes a tradable ERC-404 art token on Uniswap with built-in creator royalties." />
         <Callout type="success">Subframe Protocol pays all gas fees for token creation. Creators pay nothing.</Callout>
         <H2 id="overview">Overview</H2>
-        <P>When you upload a profile image during the claim flow, Subframe Protocol mints a unique ERC-1155 token ID on the shared SubframeArtProtocol contract. The token is immediately available for minting on a bonding curve by anyone.</P>
+        <P>When you upload a profile image during the claim flow, Subframe Protocol mints a unique ERC-404 token via a Uniswap V4 hook. The token is immediately tradeable on Uniswap. No bonding curve, no separate LP needed. Each buyer receives a unique AI-generated art variation.</P>
         <P>Your image is stored permanently on IPFS and attached to the token metadata. The token ID references your ENS subdomain so ownership and creator identity are fully on-chain and verifiable.</P>
         <H2 id="how-it-works">How it works</H2>
         {[
@@ -606,23 +606,21 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
   "/docs/art-trading": {
     breadcrumb: "ART PROTOCOL",
     sections: [
-      { id: "trading", title: "Minting and burning" },
-      { id: "curve", title: "Bonding curve" },
+      { id: "trading", title: "Buying and selling" },
+      { id: "pricing", title: "Uniswap V4 pricing" },
       { id: "royalties", title: "Creator royalties" },
     ],
     content: (
       <>
-        <PageTitle icon={BarChart2} title="Minting, Burning, and Fees" description="How art editions are minted and burned on the bonding curve and how creator royalties are distributed." />
-        <H2 id="trading">Minting and burning editions</H2>
-        <P>Each art edition has a live mint price and burn payout derived from the bonding curve. Anyone can mint a new edition by sending the exact ETH amount shown on the profile page. Anyone who holds an edition can burn it to receive back the current burn payout in ETH.</P>
-        <P>All minting and burning happens directly through the SubframeArtProtocol smart contract on Ethereum mainnet. The profile page exposes Buy and Sell buttons with live prices pulled from the contract.</P>
-        <H2 id="curve">Bonding curve mechanics</H2>
-        <P>The price model is a linear bonding curve with a base price of 0.001 ETH and an increment of 0.0001 ETH per edition in circulation.</P>
-        <CodeBlock code={`mintPrice  = 0.001 + (supply * 0.0001) ETH\nburnPayout = mintPrice - 1% fee`} language="formula" />
-        <P>Price rises as more editions are minted and falls as editions are burned. There is no liquidity pool and no external market maker. The contract itself is the market.</P>
-        <Callout type="info">Because price is determined by supply alone, minting and burning are always available regardless of market conditions. There is no slippage and no liquidity risk.</Callout>
+        <PageTitle icon={BarChart2} title="Trading and Fees" description="How ERC-404 art tokens are traded on Uniswap V4 and how creator royalties are distributed." />
+        <H2 id="trading">Buying and selling tokens</H2>
+        <P>Each art token is immediately tradeable on Uniswap from the moment it is created. Anyone can buy or sell from the profile page using the Buy and Sell buttons, which show live Uniswap prices in real time.</P>
+        <P>All trades are routed through the Uniswap V4 hook contract on Ethereum mainnet. There is no separate bonding curve or liquidity pool to seed. Liquidity is native to Uniswap from day one.</P>
+        <H2 id="pricing">Uniswap V4 pricing</H2>
+        <P>Price is determined entirely by Uniswap V4 market mechanics. As demand increases the price rises and as holders sell the price falls, following the standard AMM model.</P>
+        <Callout type="info">Because liquidity lives on Uniswap, the token benefits from all standard Uniswap V4 features including concentrated liquidity, hooks, and deep router integrations.</Callout>
         <H2 id="royalties">Creator royalties</H2>
-        <P>Royalties are trustless and automatic. The creator address is recorded at token creation time and cannot be changed. Every mint or burn sends 0.5% of the transaction value directly to the creator wallet. No claim step is needed. No platform intermediary holds the funds.</P>
+        <P>Royalties are trustless and automatic. The creator address is recorded at token creation time and cannot be changed. Every trade sends 0.5% of the transaction value directly to the creator wallet. No claim step is needed. No platform intermediary holds the funds.</P>
       </>
     ),
   },

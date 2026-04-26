@@ -1,6 +1,6 @@
 const PINATA_JWT = process.env["PINATA_JWT"] ?? "";
 const PINATA_FILE_API = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
+const IPFS_GATEWAY = "https://ipfs.io/ipfs";
 
 /* App URL for "View full profile" link — prefer explicit env var,
    then Replit dev domain, then final production ENS gateway */
