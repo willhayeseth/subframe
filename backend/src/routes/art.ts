@@ -17,7 +17,7 @@ const artGenLimiter = rateLimit({
 // GET /api/art/:subdomain - fetch stored variations
 router.get("/art/:subdomain", async (req, res) => {
   try {
-    const cleanName = String(req.params.subdomain).toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const cleanName = req.params.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, "");
     const [subdomain] = await db.select().from(subdomainsTable).where(eq(subdomainsTable.name, cleanName)).limit(1);
     if (!subdomain) return res.status(404).json({ error: "Subdomain not found" });
 
@@ -70,7 +70,7 @@ router.post("/art/:subdomain/generate", artGenLimiter, async (req, res) => {
   }, 5000);
 
   try {
-    const cleanName = String(req.params.subdomain).toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const cleanName = req.params.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, "");
     const [subdomain] = await db.select().from(subdomainsTable).where(eq(subdomainsTable.name, cleanName)).limit(1);
     if (!subdomain) { send({ type: "error", message: "Subdomain not found" }); return; }
 

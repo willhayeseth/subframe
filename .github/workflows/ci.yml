@@ -29,9 +29,9 @@ jobs:
 
       - name: Build packages (required for project references)
         run: |
-          pnpm exec tsc --build packages/db
-          pnpm exec tsc --build packages/api-zod
-          pnpm exec tsc --build packages/api-client-react
+          pnpm exec tsc --build lib/db
+          pnpm exec tsc --build lib/api-zod
+          pnpm exec tsc --build lib/api-client-react
 
       - name: Type check all packages
         run: pnpm -r --if-present run typecheck
@@ -59,9 +59,9 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build packages/db
-          pnpm exec tsc --build packages/api-zod
-          pnpm exec tsc --build packages/api-client-react
+          pnpm exec tsc --build lib/db
+          pnpm exec tsc --build lib/api-zod
+          pnpm exec tsc --build lib/api-client-react
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -105,9 +105,9 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build packages/db
-          pnpm exec tsc --build packages/api-zod
-          pnpm exec tsc --build packages/api-client-react
+          pnpm exec tsc --build lib/db
+          pnpm exec tsc --build lib/api-zod
+          pnpm exec tsc --build lib/api-client-react
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -118,7 +118,7 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Create 404.html for SPA routing
-        run: cp frontend/dist/public/index.html frontend/dist/public/404.html
+        run: cp artifacts/subframe/dist/public/index.html artifacts/subframe/dist/public/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -126,7 +126,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist/public
+          path: artifacts/subframe/dist/public
 
       - name: Deploy to GitHub Pages
         id: deployment
@@ -159,9 +159,9 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build packages/db
-          pnpm exec tsc --build packages/api-zod
-          pnpm exec tsc --build packages/api-client-react
+          pnpm exec tsc --build lib/db
+          pnpm exec tsc --build lib/api-zod
+          pnpm exec tsc --build lib/api-client-react
 
       - name: Build frontend
         run: pnpm --filter @workspace/subframe exec vite build
@@ -172,7 +172,7 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Pin to IPFS & update ENS contenthash
-        run: node frontend/scripts/pin-to-ipfs.mjs
+        run: node artifacts/subframe/scripts/pin-to-ipfs.mjs
         env:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
@@ -201,8 +201,8 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm exec tsc --build packages/db
-          pnpm exec tsc --build packages/api-zod
+          pnpm exec tsc --build lib/db
+          pnpm exec tsc --build lib/api-zod
 
       - name: Build backend
         run: pnpm --filter @workspace/api-server run build

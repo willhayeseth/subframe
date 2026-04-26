@@ -1,0 +1,125 @@
+// AUTO-GENERATED — do not edit. Re-run scripts/compile-contracts.ts to regenerate.
+export const ERC404_FACTORY_BYTECODE = "0x60a0604052348015600e575f5ffd5b506040516105cd3803806105cd833981016040819052602b91604c565b6001600160a01b03166080525f80546001600160a01b031916331790556077565b5f60208284031215605b575f5ffd5b81516001600160a01b03811681146070575f5ffd5b9392505050565b6080516105396100945f395f81816053015260d101526105395ff3fe608060405234801561000f575f5ffd5b506004361061004a575f3560e01c80635c60da1b1461004e5780638da5cb5b14610091578063d6dbeff4146100a3578063f2fde38b146100b6575b5f5ffd5b6100757f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b03909116815260200160405180910390f35b5f54610075906001600160a01b031681565b6100756100b1366004610360565b6100cb565b6100c96100c4366004610420565b6101be565b005b5f6100f57f000000000000000000000000000000000000000000000000000000000000000061026e565b604051633654b3cb60e11b81529091506001600160a01b03821690636ca9679690610134908c908c908c908c908c908c9033908d908d90600401610468565b5f604051808303815f87803b15801561014b575f5ffd5b505af115801561015d573d5f5f3e3d5ffd5b50505050846001600160a01b0316816001600160a01b03167fd5d05a8421149c74fd223cfc823befb883babf9bf0b0e4d6bf9c8fdb70e59bb48b8b8b8b6040516101aa94939291906104d2565b60405180910390a398975050505050505050565b5f546001600160a01b031633146102085760405162461bcd60e51b81526020600482015260096024820152683737ba1037bbb732b960b91b60448201526064015b60405180910390fd5b6001600160a01b03811661024d5760405162461bcd60e51b815260206004820152600c60248201526b7a65726f206164647265737360a01b60448201526064016101ff565b5f80546001600160a01b0319166001600160a01b0392909216919091179055565b5f763d602d80600a3d3981f3363d3d373d3d3d363d730000008260601b60e81c175f528160781b6e5af43d82803e903d91602b57fd5bf317602052603760095ff090506001600160a01b0381166103005760405162461bcd60e51b8152602060048201526016602482015275115490cc4c4d8dce8818dc99585d194819985a5b195960521b60448201526064016101ff565b919050565b5f5f83601f840112610315575f5ffd5b50813567ffffffffffffffff81111561032c575f5ffd5b602083019150836020828501011115610343575f5ffd5b9250929050565b80356001600160a01b0381168114610300575f5ffd5b5f5f5f5f5f5f5f5f60a0898b031215610377575f5ffd5b883567ffffffffffffffff81111561038d575f5ffd5b6103998b828c01610305565b909950975050602089013567ffffffffffffffff8111156103b8575f5ffd5b6103c48b828c01610305565b90975095506103d7905060408a0161034a565b93506103e560608a0161034a565b9250608089013567ffffffffffffffff811115610400575f5ffd5b61040c8b828c01610305565b999c989b5096995094979396929594505050565b5f60208284031215610430575f5ffd5b6104398261034a565b9392505050565b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b60c081525f61047b60c083018b8d610440565b828103602084015261048e818a8c610440565b6001600160a01b03898116604086015288811660608601528716608085015283810360a085015290506104c2818587610440565b9c9b505050505050505050505050565b604081525f6104e5604083018688610440565b82810360208401526104f8818587610440565b97965050505050505056fea264697066735822122014de171964427f031b663cc42173f41bb71ac6684f8c0a7a7f350b1efe4732ba64736f6c63430008220033" as const;
+
+export const ERC404_FACTORY_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_implementation",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "clone",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "creator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "symbol",
+        "type": "string"
+      }
+    ],
+    "name": "TokenCreated",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "_name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_symbol",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_baseURI",
+        "type": "string"
+      }
+    ],
+    "name": "createToken",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "clone",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "implementation",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const;

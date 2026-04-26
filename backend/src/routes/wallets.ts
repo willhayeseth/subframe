@@ -293,7 +293,7 @@ ${txSummary || "No recent transactions found"}
 Provide a JSON response with:
 {
   "summary": "2-3 sentence overview of this wallet's behavior",
-  "activityType": "one of: DeFi Trader, NFT Collector, Long-term Holder, Developer, Exchange Wallet, Inactive Wallet, Active Transactor",
+  "activityType": "one of: DeFi Trader, NFT Collector, Long-term Holder, Power User, Exchange Wallet, Inactive Wallet, Active Transactor",
   "riskLevel": "low | medium | high",
   "tags": ["array", "of", "3-5", "descriptive", "tags"],
   "insights": ["array of 3-4 specific insights about this wallet's on-chain activity"]
@@ -328,10 +328,16 @@ Respond ONLY with valid JSON, no markdown. Never use em dashes or double hyphens
       };
     }
 
+    const BANNED_ACTIVITY_TYPES = ["developer"];
+    const rawActivityType = analysis.activityType ?? "Unknown";
+    const sanitizedActivityType = BANNED_ACTIVITY_TYPES.includes(rawActivityType.toLowerCase())
+      ? "Power User"
+      : rawActivityType;
+
     res.json({
       address,
       summary: analysis.summary ?? "",
-      activityType: analysis.activityType ?? "Unknown",
+      activityType: sanitizedActivityType,
       riskLevel: (["low", "medium", "high"].includes(analysis.riskLevel) ? analysis.riskLevel : "low") as "low" | "medium" | "high",
       tags: Array.isArray(analysis.tags) ? analysis.tags : [],
       insights: Array.isArray(analysis.insights) ? analysis.insights : [],

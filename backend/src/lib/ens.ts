@@ -569,3 +569,81 @@ export async function setParentContenthash(ipfsCid: string): Promise<string | nu
   console.log(`[ENS:parent] Done — subframe.eth contenthash live`);
   return txHash;
 }
+
+const REVERSE_REGISTRAR = "0xa58E81fe9b61B5c3fE2AFD33CF304c454AbFc7Cb" as Address;
+const REVERSE_REGISTRAR_ABI = [
+  {
+    name: "setName",
+    type: "function",
+    inputs: [{ name: "name", type: "string" }],
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+export async function setContenthashForWallet(
+  name: string,
+  ipfsCid: string,
+  userPrivateKey: string
+): Promise<string | null> {
+  const privateKey = (userPrivateKey.startsWith("0x") ? userPrivateKey : `0x${userPrivateKey}`) as `0x${string}`;
+  const account = privateKeyToAccount(privateKey);
+  const transport = http(DEFAULT_RPC);
+  const publicClient = createPublicClient({ chain: mainnet, transport });
+  const walletClient = createWalletClient({ account, chain: mainnet, transport });
+
+  const subnameNode = namehash(`${name}.subframe.eth`);
+  const contenthash = cidToContentHash(ipfsCid);
+
+  const feeData = await publicClient.estimateFeesPerGas();
+  const maxPriorityFeePerGas = BigInt(2_000_000_000);
+  const maxFeePerGas = (feeData.maxFeePerGas ?? BigInt(10_000_000_000)) * 2n + maxPriorityFeePerGas;
+
+  console.log(`[ENS:setContenthash] Setting contenthash for ${name}.subframe.eth from ${account.address}`);
+
+  const txHash = await walletClient.writeContract({
+    address: PUBLIC_RESOLVER,
+    abi: RESOLVER_ABI,
+    functionName: "setContenthash",
+    args: [subnameNode, contenthash],
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+  });
+
+  console.log(`[ENS:setContenthash] TX: ${txHash}, waiting...`);
+  await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 10 * 60 * 1000 });
+  console.log(`[ENS:setContenthash] Done — ${name}.subframe.eth contenthash updated`);
+  return txHash;
+}
+
+export async function setNameForWallet(
+  name: string,
+  userPrivateKey: string
+): Promise<string | null> {
+  const privateKey = (userPrivateKey.startsWith("0x") ? userPrivateKey : `0x${userPrivateKey}`) as `0x${string}`;
+  const account = privateKeyToAccount(privateKey);
+  const transport = http(DEFAULT_RPC);
+  const publicClient = createPublicClient({ chain: mainnet, transport });
+  const walletClient = createWalletClient({ account, chain: mainnet, transport });
+
+  const feeData = await publicClient.estimateFeesPerGas();
+  const maxPriorityFeePerGas = BigInt(2_000_000_000);
+  const maxFeePerGas = (feeData.maxFeePerGas ?? BigInt(10_000_000_000)) * 2n + maxPriorityFeePerGas;
+
+  const fullName = `${name}.subframe.eth`;
+  console.log(`[ENS:setName] Setting primary name for ${account.address} -> ${fullName}`);
+
+  const txHash = await walletClient.writeContract({
+    address: REVERSE_REGISTRAR,
+    abi: REVERSE_REGISTRAR_ABI,
+    functionName: "setName",
+    args: [fullName],
+    maxFeePerGas,
+    maxPriorityFeePerGas,
+  });
+
+  console.log(`[ENS:setName] TX: ${txHash}, waiting...`);
+  await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 10 * 60 * 1000 });
+  console.log(`[ENS:setName] Done — primary name set to ${fullName}`);
+  return txHash;
+}

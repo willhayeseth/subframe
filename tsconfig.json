@@ -4,19 +4,16 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/db"
+      "path": "./lib/db"
     },
     {
-      "path": "./packages/api-client-react"
+      "path": "./lib/api-client-react"
     },
     {
-      "path": "./packages/api-zod"
+      "path": "./lib/api-zod"
     },
     {
-      "path": "./backend"
-    },
-    {
-      "path": "./frontend"
+      "path": "./lib/integrations-openai-ai-server"
     }
   ]
 }

@@ -5,6 +5,8 @@ import walletsRouter from "./wallets";
 import openaiRouter from "./openai";
 import uploadRouter from "./upload";
 import adminRouter from "./admin";
+import artDemoRouter from "./art-demo";
+import artRouter from "./art";
 
 const router: IRouter = Router();
 
@@ -14,5 +16,7 @@ router.use(walletsRouter);
 router.use(openaiRouter);
 router.use(uploadRouter);
 router.use(adminRouter);
+router.use(artDemoRouter);
+router.use(artRouter);
 
 export default router;

@@ -1,18 +1,14 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { ipfsImg } from "@/lib/ipfs-url";
 import { useParams, Link, useLocation } from "wouter";
-import { useAccount, useEnsName, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { parseEther, formatEther } from "viem";
+import { useAccount, useEnsName, useReadContract } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Brain, Bot, User, Send,
   ExternalLink, Copy, CheckCircle, Tag, Lightbulb, Zap,
   Terminal, Globe, Hash, ArrowUpRight, MessageSquare, Repeat2, X, ChevronRight,
-  Coins, TrendingUp, AlertCircle, TrendingDown, Activity, BarChart2, DollarSign
+  Coins, AlertCircle, Activity
 } from "lucide-react";
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
-} from "recharts";
 import { SubframeNetworkMap } from "../components/network-map";
 import {
   useGetSubdomainByName,
@@ -200,144 +196,189 @@ function RegistrationLog({ subdomain }: { subdomain: Subdomain }) {
 
 /* ─── art token card ────────────────────────────────────── */
 
-const ART_PROTOCOL_MINI_ABI = [
-  { name: "getMintPrice", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
-  { name: "getBurnPayout", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
-  { name: "totalSupply", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
-  { name: "balanceOf", type: "function", inputs: [{ name: "account", type: "address" }, { name: "id", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
-  { name: "mint", type: "function", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [], stateMutability: "payable" },
-  { name: "burn", type: "function", inputs: [{ name: "tokenId", type: "uint256" }, { name: "amount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+const ERC404_ABI = [
+  { name: "balanceOf",        type: "function", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "nftBalanceOf",     type: "function", inputs: [{ name: "owner",   type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "totalSupply",      type: "function", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "artIndexOfOwner",  type: "function", inputs: [{ name: "owner",   type: "address" }], outputs: [{ name: "", type: "uint256[]" }], stateMutability: "view" },
+  { name: "nextTokenId",      type: "function", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "baseURI",          type: "function", inputs: [], outputs: [{ name: "", type: "string" }], stateMutability: "view" },
 ] as const;
 
-function fmtEth(wei: bigint): string {
-  const e = parseFloat(formatEther(wei));
-  if (e >= 1) return `${e.toFixed(4)} ETH`;
-  if (e >= 0.001) return `${e.toFixed(6)} ETH`;
-  return `${e.toFixed(8)} ETH`;
+/** Convert an ipfs:// URI to an IPFS gateway URL */
+function ipfsToGateway(uri: string | undefined): string | null {
+  if (!uri) return null;
+  if (uri.startsWith("ipfs://")) {
+    return "https://ipfs.io/ipfs/" + uri.slice(7);
+  }
+  if (uri.startsWith("https://")) return uri;
+  return null;
 }
 
-function buildCurvePoints(currentSupply: number): { supply: number; price: number }[] {
-  const BASE = 0.001;
-  const INC = 0.0001;
-  const max = Math.max(currentSupply + 20, 30);
-  return Array.from({ length: max + 1 }, (_, i) => ({ supply: i, price: parseFloat((BASE + i * INC).toFixed(6)) }));
-}
-
-function ArtBondingCurve({ contractAddress, artTokenId }: { contractAddress: string; artTokenId: string }) {
-  const { address: userAddress } = useAccount();
-  const tokenId = BigInt(artTokenId);
-  const addr = contractAddress as `0x${string}`;
-
-  const { data: mintPrice, refetch: refetchMintPrice } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "getMintPrice", args: [tokenId] });
-  const { data: burnPayout, refetch: refetchBurnPayout } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "getBurnPayout", args: [tokenId] });
-  const { data: supply, refetch: refetchSupply } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "totalSupply", args: [tokenId] });
-  const { data: userBalance } = useReadContract({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "balanceOf", args: userAddress ? [userAddress, tokenId] : undefined, query: { enabled: !!userAddress } });
-
-  const { writeContract: writeMint, data: mintTxHash, isPending: mintPending, error: mintError } = useWriteContract();
-  const { writeContract: writeBurn, data: burnTxHash, isPending: burnPending, error: burnError } = useWriteContract();
-  const { isLoading: mintConfirming, isSuccess: mintSuccess } = useWaitForTransactionReceipt({ hash: mintTxHash });
-  const { isLoading: burnConfirming, isSuccess: burnSuccess } = useWaitForTransactionReceipt({ hash: burnTxHash });
+/**
+ * Tries to display the actual art image for a given variation index.
+ * Falls back to a deterministic gradient tile if IPFS content isn't reachable.
+ */
+function ArtVariationImage({
+  artIndex,
+  baseURI: rawBase,
+  subdomainName,
+}: {
+  artIndex: number;
+  baseURI: string | undefined;
+  subdomainName: string;
+}) {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
-    if (mintSuccess || burnSuccess) {
-      refetchMintPrice(); refetchBurnPayout(); refetchSupply();
-    }
-  }, [mintSuccess, burnSuccess]);
+    setImgError(false);
+    const gatewayBase = ipfsToGateway(rawBase);
+    if (!gatewayBase) { setImgSrc(null); return; }
+    // Try metadata JSON first to get image URL
+    const metaUrl = `${gatewayBase}${artIndex}.json`;
+    let cancelled = false;
+    fetch(metaUrl, { signal: AbortSignal.timeout(5000) })
+      .then(r => r.json())
+      .then((data: { image?: string }) => {
+        if (cancelled) return;
+        const img = data.image ? ipfsToGateway(data.image) ?? data.image : null;
+        setImgSrc(img ?? `${gatewayBase}${artIndex}.png`);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fall back to direct .png URL
+        setImgSrc(`${gatewayBase}${artIndex}.png`);
+      });
+    return () => { cancelled = true; };
+  }, [rawBase, artIndex]);
 
-  const currentSupply = Number(supply ?? 0n);
-  const curveData = buildCurvePoints(currentSupply);
-  const holdingCount = Number(userBalance ?? 0n);
+  const hue  = Math.round((artIndex * 360) / 69);
+  const hue2 = (hue + 40) % 360;
+  const gradient = `linear-gradient(135deg, hsl(${hue},70%,20%) 0%, hsl(${hue2},80%,35%) 100%)`;
 
-  const handleMint = () => {
-    if (!mintPrice) return;
-    writeMint({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "mint", args: [tokenId], value: mintPrice });
-  };
+  return (
+    <div
+      className="relative rounded-lg overflow-hidden aspect-square flex flex-col items-end justify-end p-1.5"
+      style={{ background: gradient }}
+    >
+      {imgSrc && !imgError && (
+        <img
+          src={imgSrc}
+          alt={`${subdomainName} #${artIndex + 1}`}
+          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+          onError={() => setImgError(true)}
+        />
+      )}
+      <span className="relative z-10 font-mono text-[10px] font-bold text-white/90 bg-black/40 rounded px-1 py-0.5 leading-none">
+        #{artIndex + 1}
+      </span>
+    </div>
+  );
+}
 
-  const handleBurn = () => {
-    if (holdingCount < 1) return;
-    writeBurn({ address: addr, abi: ART_PROTOCOL_MINI_ABI, functionName: "burn", args: [tokenId, 1n] });
-  };
+/**
+ * ERC404Card — shows on-chain token stats and NFT holdings for a deployed ERC-404 token.
+ * Trading is done externally via Uniswap V4.
+ */
+function ERC404Card({
+  contractAddress,
+  tokenSymbol,
+  subdomainName,
+  uniswapUrl,
+}: {
+  contractAddress: string;
+  tokenSymbol?: string | null;
+  subdomainName: string;
+  uniswapUrl: string | null;
+}) {
+  const { address: userAddress } = useAccount();
+  const addr = contractAddress as `0x${string}`;
 
-  const mintLoading = mintPending || mintConfirming;
-  const burnLoading = burnPending || burnConfirming;
+  const { data: nextTokenIdRaw } = useReadContract({ address: addr, abi: ERC404_ABI, functionName: "nextTokenId" });
+  const { data: rawBaseURI }     = useReadContract({ address: addr, abi: ERC404_ABI, functionName: "baseURI" });
+  const { data: userBalanceRaw } = useReadContract({
+    address: addr, abi: ERC404_ABI, functionName: "balanceOf",
+    args: userAddress ? [userAddress] : undefined,
+    query: { enabled: !!userAddress },
+  });
+  const { data: userArtIndices } = useReadContract({
+    address: addr, abi: ERC404_ABI, functionName: "artIndexOfOwner",
+    args: userAddress ? [userAddress] : undefined,
+    query: { enabled: !!userAddress },
+  });
+
+  const nftsMinted      = Number(nextTokenIdRaw ?? 0n);
+  const userTokens      = userBalanceRaw ?? 0n;
+  const userWholeTokens = Number(userTokens / 10n ** 18n);
+  const userFraction    = userTokens % (10n ** 18n);
+  const artIndices      = (userArtIndices as bigint[] | undefined) ?? [];
+
+  function fmtTokenBalance(bal: bigint): string {
+    const whole = Number(bal / 10n ** 18n);
+    const frac  = Number((bal % (10n ** 18n)) * 10000n / 10n ** 18n);
+    if (frac === 0) return `${whole}`;
+    return `${whole}.${frac.toString().padStart(4, "0").replace(/0+$/, "")}`;
+  }
 
   return (
     <div className="mt-3 space-y-3">
-      <div className="flex items-end justify-between gap-2">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <div className="font-mono text-xl font-black text-[#CBFF4D]">{mintPrice ? fmtEth(mintPrice) : "---"}</div>
-          <div className="text-[10px] text-white/25 font-mono">trade price (Uniswap V4)</div>
+          <div className="font-mono text-lg font-black text-[#CBFF4D]">
+            {fmtTokenBalance(userTokens)} <span className="text-sm font-bold text-white/50">${tokenSymbol ?? "..."}</span>
+          </div>
+          <div className="text-[10px] text-white/25 font-mono">your balance</div>
         </div>
         <div className="text-right">
-          <div className="font-mono text-sm font-bold text-white/60">{currentSupply}</div>
-          <div className="text-[10px] text-white/25 font-mono">editions minted</div>
+          <div className="font-mono text-sm font-bold text-white/60">{nftsMinted}</div>
+          <div className="text-[10px] text-white/25 font-mono">NFTs minted</div>
         </div>
       </div>
 
-      <div className="h-[70px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={curveData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-            <defs>
-              <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#CBFF4D" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#CBFF4D" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="supply" hide />
-            <YAxis domain={["auto", "auto"]} hide />
-            <Tooltip
-              contentStyle={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontSize: 11, fontFamily: "monospace" }}
-              itemStyle={{ color: "#CBFF4D" }}
-              labelStyle={{ color: "rgba(255,255,255,0.3)" }}
-              formatter={(v: number) => [`${v.toFixed(6)} ETH`, "price"]}
-              labelFormatter={(l: number) => `supply: ${l}`}
-            />
-            <Area type="monotone" dataKey="price" stroke="#CBFF4D" strokeWidth={1.5} fill="url(#curveGrad)"
-              dot={(props: { cx: number; cy: number; index: number }) => {
-                if (props.index !== currentSupply) return <g key={props.index} />;
-                return <circle key={props.index} cx={props.cx} cy={props.cy} r={5} fill="#CBFF4D" stroke="#111" strokeWidth={2} />;
-              }}
-              activeDot={{ r: 3, fill: "#CBFF4D", strokeWidth: 0 }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      {userWholeTokens > 0 && artIndices.length > 0 && (
+        <div className="rounded-lg bg-[#CBFF4D]/5 border border-[#CBFF4D]/10 px-3 py-2">
+          <div className="text-[10px] text-[#CBFF4D]/50 font-mono uppercase tracking-widest mb-2">Your NFTs</div>
+          <div className="grid grid-cols-3 gap-2">
+            {artIndices.map((idx, i) => (
+              <ArtVariationImage
+                key={i}
+                artIndex={Number(idx)}
+                baseURI={rawBaseURI as string | undefined}
+                subdomainName={subdomainName}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={handleMint}
-          disabled={mintLoading || !mintPrice || !userAddress}
-          className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/25 text-[#CBFF4D] text-sm font-bold hover:bg-[#CBFF4D]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+      {userWholeTokens === 0 && userTokens > 0n && (
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2 text-center">
+          <span className="text-xs font-mono text-white/30">
+            Hold 1 full token to receive an NFT
+            {userFraction > 0n && ` (${fmtTokenBalance(userFraction)} more needed)`}
+          </span>
+        </div>
+      )}
+
+      {uniswapUrl ? (
+        <a
+          href={uniswapUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#CBFF4D] text-[#0C0C0C] text-sm font-bold hover:bg-[#CBFF4D]/90 transition-colors"
         >
-          {mintLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
-          {mintLoading ? "Buying..." : `Buy ${mintPrice ? fmtEth(mintPrice) : ""}`}
-        </button>
-        <button
-          onClick={handleBurn}
-          disabled={burnLoading || holdingCount < 1 || !userAddress}
-          className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          {burnLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingDown className="w-4 h-4" />}
-          {burnLoading ? "Selling..." : `Sell ${burnPayout ? fmtEth(burnPayout) : ""}`}
-        </button>
-      </div>
+          <ArrowUpRight className="w-4 h-4" />
+          Trade on Uniswap V4
+        </a>
+      ) : (
+        <div className="flex items-center justify-center w-full py-2.5 rounded-xl bg-white/5 border border-white/[0.06] text-white/25 text-sm font-mono">
+          Pool seeding in progress...
+        </div>
+      )}
 
       {!userAddress && (
-        <p className="text-center text-xs text-white/25 font-mono">Connect wallet to buy or sell</p>
-      )}
-
-      {holdingCount > 0 && (
-        <div className="rounded-lg bg-[#CBFF4D]/5 border border-[#CBFF4D]/10 px-3 py-2 text-center">
-          <span className="text-xs font-mono text-[#CBFF4D]/70">You hold <strong>{holdingCount}</strong> edition{holdingCount !== 1 ? "s" : ""}</span>
-          {burnPayout && <span className="text-white/25 font-mono text-xs"> · sell value: {fmtEth(burnPayout * BigInt(holdingCount))}</span>}
-        </div>
-      )}
-
-      {(mintError || burnError) && (
-        <p className="text-xs text-red-400/60 font-mono text-center truncate">{(mintError ?? burnError)?.message?.slice(0, 80)}</p>
-      )}
-
-      {(mintSuccess || burnSuccess) && (
-        <p className="text-xs text-[#CBFF4D]/60 font-mono text-center">Transaction confirmed</p>
+        <p className="text-center text-xs text-white/25 font-mono">Connect wallet to view your balance</p>
       )}
     </div>
   );
@@ -353,7 +394,7 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
     setTimeout(() => setCopiedAddr(null), 2000);
   };
 
-  if (ts === "none" || ts === "failed") {
+  if (ts === "none") {
     return (
       <div className="rounded-xl border border-white/[0.05] bg-[#080808] overflow-hidden">
         <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
@@ -365,7 +406,27 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
         </div>
         <div className="p-4">
           <p className="text-xs text-white/20 font-mono">
-            Art Protocol token minting will be available soon for this subdomain.
+            An ERC-404 art token will be deployed for this subdomain automatically.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (ts === "failed") {
+    return (
+      <div className="rounded-xl border border-red-500/10 bg-[#080808] overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2">
+          <Coins className="w-3.5 h-3.5 text-red-400/40" />
+          <span className="text-xs font-mono text-white/20 uppercase tracking-wider">Art Collection</span>
+          <div className="ml-auto flex items-center gap-1.5 font-mono text-xs text-red-400/50">
+            <AlertCircle className="w-3 h-3" />
+            <span>deployment failed</span>
+          </div>
+        </div>
+        <div className="p-4">
+          <p className="text-xs text-white/20 font-mono">
+            Token deployment encountered an error. The platform will retry automatically.
           </p>
         </div>
       </div>
@@ -409,15 +470,20 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
               <div className="text-xs text-white/30 font-mono">{subdomain.tokenName ?? ""}</div>
             </div>
 
-            {subdomain.tokenAddress && subdomain.artTokenId && (
-              <ArtBondingCurve contractAddress={subdomain.tokenAddress} artTokenId={subdomain.artTokenId} />
+            {subdomain.tokenAddress && (
+              <ERC404Card
+                contractAddress={subdomain.tokenAddress}
+                tokenSymbol={subdomain.tokenSymbol}
+                subdomainName={subdomain.name}
+                uniswapUrl={`https://app.uniswap.org/swap?chain=mainnet&outputCurrency=${subdomain.tokenAddress}`}
+              />
             )}
 
             {subdomain.tokenAddress && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
                   <div>
-                    <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Token</div>
+                    <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Contract</div>
                     <span className="font-mono text-xs text-white/45 truncate">
                       {subdomain.tokenAddress.slice(0, 18)}...{subdomain.tokenAddress.slice(-6)}
                     </span>
@@ -439,33 +505,6 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
                     </a>
                   </div>
                 </div>
-
-                {subdomain.artTokenId && (
-                  <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-                    <div>
-                      <div className="text-[10px] text-white/25 uppercase tracking-widest font-mono mb-0.5">Token ID</div>
-                      <span className="font-mono text-xs text-white/45 truncate">
-                        #{subdomain.artTokenId}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => copy(subdomain.artTokenId!, "pair")}
-                        className="text-white/20 hover:text-[#CBFF4D] transition-colors"
-                      >
-                        {copiedAddr === "pair" ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                      <a
-                        href={`https://etherscan.io/token/${subdomain.tokenAddress}?a=${subdomain.artTokenId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white/20 hover:text-[#CBFF4D] transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                )}
 
                 {subdomain.tokenDeployTxHash && (
                   <a
@@ -625,7 +664,7 @@ interface ArtVariationItem {
   imageUrl: string | null;
 }
 
-function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdomainName: string; tokenAddress?: string | null; isOwnProfile: boolean }) {
+function ArtTokenGallery({ subdomainName, tokenAddress, tokenStatus, isOwnProfile }: { subdomainName: string; tokenAddress?: string | null; tokenStatus?: string | null; isOwnProfile: boolean }) {
   const [variations, setVariations] = useState<ArtVariationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -763,6 +802,10 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
               <ArrowUpRight className="w-3 h-3" />
               Trade
             </a>
+          ) : tokenStatus === "failed" ? (
+            <span className="text-xs text-red-400/50 px-2 py-1 rounded-lg border border-red-500/10">Deploy failed</span>
+          ) : tokenStatus === "deploying" ? (
+            <span className="text-xs text-amber-400/50 px-2 py-1 rounded-lg border border-white/[0.08]">Deploying...</span>
           ) : (
             <span className="text-xs text-white/20 px-2 py-1 rounded-lg border border-white/[0.08]">Token launching soon</span>
           )}
@@ -816,7 +859,7 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
-                  <span className="text-[9px] text-white/80 leading-tight font-mono line-clamp-2">{v.style}</span>
+                  <span className="text-[9px] text-white/80 leading-tight font-mono line-clamp-2">{subdomainName} #{(v.variationIndex ?? 0) + 1}</span>
                 </div>
               </button>
             ))}
@@ -842,8 +885,8 @@ function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdom
                 />
               )}
               <div className="p-4">
-                <div className="text-sm font-bold text-white/80 mb-0.5">{selected.style}</div>
-                <div className="text-xs text-white/35 font-mono mb-4">{selected.variation}</div>
+                <div className="text-sm font-bold text-white/80 mb-0.5">{subdomainName} #{(selected.variationIndex ?? 0) + 1}</div>
+                <div className="text-xs text-white/35 font-mono mb-4">{selected.style}</div>
                 <div className="flex gap-2">
                   {uniswapUrl ? (
                     <a href={uniswapUrl} target="_blank" rel="noopener noreferrer"
@@ -1193,16 +1236,14 @@ export default function Profile() {
               </button>
             </motion.div>
 
-            {/* Art Token Card */}
-            {subdomain.tokenStatus !== "none" && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.09 }}
-              >
-                <ArtTokenCard subdomain={subdomain} />
-              </motion.div>
-            )}
+            {/* Art Token Card — shown for all statuses */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.09 }}
+            >
+              <ArtTokenCard subdomain={subdomain} />
+            </motion.div>
 
             {/* Registration Log — hidden once all backend steps are done */}
             {!allBackendStepsDone && (
@@ -1822,7 +1863,7 @@ function StandaloneProfileLayout({
               <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
               Art Collection
             </h2>
-            <ArtTokenGallery subdomainName={subdomain.name} tokenAddress={subdomain.tokenAddress} isOwnProfile={isOwnProfile} />
+            <ArtTokenGallery subdomainName={subdomain.name} tokenAddress={subdomain.tokenAddress} tokenStatus={subdomain.tokenStatus} isOwnProfile={isOwnProfile} />
           </motion.div>
         </div>
 
@@ -1896,7 +1937,7 @@ function StandaloneProfileLayout({
                 <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
                 Art Collection
               </h2>
-              <ArtTokenGallery subdomainName={subdomain.name} tokenAddress={subdomain.tokenAddress} isOwnProfile={isOwnProfile} />
+              <ArtTokenGallery subdomainName={subdomain.name} tokenAddress={subdomain.tokenAddress} tokenStatus={subdomain.tokenStatus} isOwnProfile={isOwnProfile} />
             </motion.div>
           )}
 
