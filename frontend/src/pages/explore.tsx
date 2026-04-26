@@ -1,23 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, ExternalLink, Layers, Globe } from "lucide-react";
+import { Search, ExternalLink } from "lucide-react";
 import { useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 import { SubframeNetworkMap } from "../components/network-map";
 import { ipfsImg } from "@/lib/ipfs-url";
-
-function StatusBadge({ status }: { status: string }) {
-  const c: Record<string, string> = {
-    linked: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-    active: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20",
-    pending: "text-amber-400 bg-amber-400/10 border-amber-400/20",
-  };
-  return (
-    <span className={`text-xs px-2.5 py-0.5 rounded-full border font-mono ${c[status] ?? c.pending}`}>
-      {status}
-    </span>
-  );
-}
 
 function openProfile(name: string) {
   window.open(`https://subframe.eth.limo/${name}`, "_blank", "noopener,noreferrer");
@@ -25,9 +12,7 @@ function openProfile(name: string) {
 
 export default function Explore() {
   const { data: subdomains, isLoading } = useListSubdomains();
-  const [view, setView] = useState<"identities" | "art">("identities");
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "linked" | "active" | "pending">("all");
   const [highlighted, setHighlighted] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,12 +27,11 @@ export default function Explore() {
 
   const filtered = (subdomains ?? []).filter((s: Subdomain) => {
     const q = search.toLowerCase();
-    const matchSearch =
+    return (
       s.ensFullName.includes(q) ||
       s.walletAddress.toLowerCase().includes(q) ||
-      (s.bio ?? "").toLowerCase().includes(q);
-    const matchFilter = filter === "all" || s.status === filter;
-    return matchSearch && matchFilter;
+      (s.bio ?? "").toLowerCase().includes(q)
+    );
   });
 
   const short = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
@@ -67,7 +51,7 @@ export default function Explore() {
 
         {/* RIGHT: list */}
         <div className="flex flex-col w-full lg:w-[400px] xl:w-[440px] shrink-0 border-l border-white/[0.05] h-full overflow-hidden">
-          {/* Header + filters */}
+          {/* Header + search */}
           <div className="px-5 pt-5 pb-3 border-b border-white/[0.05] shrink-0">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -82,31 +66,7 @@ export default function Explore() {
               </div>
             </div>
 
-            <div className="flex gap-1.5 mb-3">
-              {(["identities", "art"] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border transition-all ${
-                    view === v
-                      ? "bg-[#CBFF4D]/12 border-[#CBFF4D]/30 text-[#CBFF4D]"
-                      : "border-white/8 text-white/35 hover:text-white/60 hover:bg-white/5"
-                  }`}
-                >
-                  {v === "art" ? <Layers className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                  {v}
-                  {v === "art" && (
-                    <span className="ml-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-400 border border-amber-400/25 uppercase tracking-wider leading-none">
-                      Soon
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {view === "identities" && (
-            <>
-            <div className="relative mb-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
               <input
                 data-testid="input-search"
@@ -117,42 +77,10 @@ export default function Explore() {
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-white/8 bg-white/[0.04] text-white placeholder:text-white/20 focus:outline-none focus:border-[#CBFF4D]/40 focus:ring-1 focus:ring-[#CBFF4D]/15 text-sm transition-all"
               />
             </div>
-
-            <div className="flex gap-1.5">
-              {(["all", "linked", "active", "pending"] as const).map((f) => (
-                <button
-                  key={f}
-                  data-testid={`filter-${f}`}
-                  onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border transition-all ${
-                    filter === f
-                      ? "bg-[#CBFF4D]/12 border-[#CBFF4D]/30 text-[#CBFF4D]"
-                      : "border-white/8 text-white/35 hover:text-white/60 hover:bg-white/5"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            </>
-            )}
           </div>
 
           {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto min-h-0">
-          {view === "art" && (
-            <div className="flex flex-col items-center justify-center py-16 px-6 gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#CBFF4D]/8 border border-[#CBFF4D]/15 flex items-center justify-center">
-                <Layers className="w-5 h-5 text-[#CBFF4D]/40" />
-              </div>
-              <div className="text-center">
-                <p className="text-white/40 text-sm font-semibold">Art Protocol Coming Soon</p>
-                <p className="text-white/20 text-xs mt-1">Claim your subdomain and upload art to be listed here.</p>
-              </div>
-            </div>
-          )}
-          {view === "identities" && (
-            <>
             {isLoading && (
               <div className="flex items-center justify-center py-16 text-white/30 text-sm gap-2">
                 <svg className="w-4 h-4 animate-spin text-[#CBFF4D]/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -211,23 +139,18 @@ export default function Explore() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <StatusBadge status={s.status} />
+                <div className="shrink-0">
                   <ExternalLink className="w-3.5 h-3.5 text-white/20 group-hover:text-[#CBFF4D]/60 transition-colors" />
                 </div>
               </motion.div>
             ))}
-            </>
-          )}
           </div>
 
-          {view === "identities" && (
           <div className="px-5 py-2.5 border-t border-white/[0.05] shrink-0">
             <p className="text-xs text-white/20 font-mono text-right">
               {filtered.length} of {subdomains?.length ?? 0} shown
             </p>
           </div>
-          )}
         </div>
 
       </div>

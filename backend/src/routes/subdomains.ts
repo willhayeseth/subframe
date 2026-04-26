@@ -14,6 +14,9 @@ import { registerSubdomainOnChain, fixContenthash, transferSubdomainOwnership, s
 import { claimLimiter } from "../lib/rateLimit.js";
 import { pushRegistryUpdate } from "../lib/github.js";
 import { deployArtToken, buildTokenMeta } from "../lib/token.js";
+import { generateArtForSubdomain } from "../lib/art-gen.js";
+
+const RESERVED_NAMES = new Set(["vitalik", "vb", "vb2"]);
 
 const router = Router();
 
@@ -54,6 +57,11 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
 
   const { name, walletAddress, bio, avatarUrl } = parsed.data;
   const cleanName = name.toLowerCase().replace(/[^a-z0-9-]/g, "");
+
+  if (RESERVED_NAMES.has(cleanName)) {
+    res.status(409).json({ error: "Subdomain name already taken" });
+    return;
+  }
 
   try {
     const existing = await db
@@ -115,6 +123,14 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
           .update(subdomainsTable)
           .set({ ipfsCid: cid, status: "active", updatedAt: new Date() })
           .where(eq(subdomainsTable.id, subdomain.id));
+
+        // Auto-generate 69 art variations in background (fire-and-forget)
+        if (avatarUrl) {
+          console.log(`[CLAIM] Triggering art generation for ${cleanName}...`);
+          generateArtForSubdomain(subdomain.id, cleanName, avatarUrl).catch((err) => {
+            console.error(`[CLAIM] Art generation failed for ${cleanName}:`, err);
+          });
+        }
 
         // Run ENS registration and Art Token deployment in parallel
         console.log(`[CLAIM] Step 2/3: Starting ENS registration + Art Token deployment in parallel...`);
@@ -225,6 +241,11 @@ router.get("/subdomains/check/:name", async (req, res) => {
   }
 
   const cleanName = parsed.data.name.toLowerCase().replace(/[^a-z0-9-]/g, "");
+
+  if (RESERVED_NAMES.has(cleanName)) {
+    res.json({ available: false, name: cleanName });
+    return;
+  }
 
   try {
     const existing = await db
