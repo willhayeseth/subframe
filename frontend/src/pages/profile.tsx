@@ -1850,7 +1850,7 @@ function StandaloneProfileLayout({
             <div className="shrink-0 flex border-b border-white/[0.06] bg-[#080808]">
               {(["analysis", "transactions", "chat"] as const).map((tab) => {
                 const labels: Record<string, string> = { analysis: "Wallet Analysis", transactions: "Transactions", chat: "AI Chat" };
-                const icons: Record<string, JSX.Element> = {
+                const icons: Record<string, React.ReactElement> = {
                   analysis: <Brain className="w-3.5 h-3.5" />,
                   transactions: <Activity className="w-3.5 h-3.5" />,
                   chat: <Bot className="w-3.5 h-3.5" />,
@@ -1939,7 +1939,7 @@ function StandaloneProfileLayout({
             { id: "art", label: "Art", icon: <Coins className="w-5 h-5" /> },
             { id: "analysis", label: "Analysis", icon: <Brain className="w-5 h-5" /> },
             { id: "chat", label: "AI Chat", icon: <Bot className="w-5 h-5" /> },
-          ]) as Array<{ id: "home"|"art"|"analysis"|"chat"; label: string; icon: JSX.Element }>).map((item) => (
+          ]) as Array<{ id: "home"|"art"|"analysis"|"chat"; label: string; icon: React.ReactElement }>).map((item) => (
             <button key={item.id} onClick={() => setMobileTab(item.id)}
               className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-3 transition-all ${
                 mobileTab === item.id ? "text-[#CBFF4D]" : "text-white/25 hover:text-white/50"
