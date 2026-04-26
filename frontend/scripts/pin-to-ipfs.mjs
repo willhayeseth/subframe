@@ -169,10 +169,12 @@ console.log(`[IPFS] Pinning ${files.length} files to Pinata...`);
 const form = new FormData();
 for (const { full, rel } of files) {
   const buf = fs.readFileSync(full);
-  form.append("file", new Blob([buf]), `subframe/${rel}`);
+  form.append("file", new Blob([buf]), rel);
 }
+// SPA fallback: eth.limo / IPFS gateways honour _redirects to serve index.html for any path
+form.append("file", new Blob(["/* /index.html 200\n"], { type: "text/plain" }), "_redirects");
 form.append("pinataMetadata", JSON.stringify({ name: `subframe-frontend-${Date.now()}` }));
-form.append("pinataOptions", JSON.stringify({ cidVersion: 0, wrapWithDirectory: false }));
+form.append("pinataOptions", JSON.stringify({ cidVersion: 1, wrapWithDirectory: true }));
 
 let cid;
 for (let attempt = 1; attempt <= 3; attempt++) {

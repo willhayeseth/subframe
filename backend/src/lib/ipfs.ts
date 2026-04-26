@@ -565,7 +565,7 @@ export async function uploadParentAppToIPFS(): Promise<string | null> {
     return null;
   }
 
-  const API_BASE = "https://subframedev.replit.app";
+  const API_BASE = process.env["API_URL"] ?? "https://subframe.network";
 
   const indexHtml = `<!DOCTYPE html>
 <html lang="en">

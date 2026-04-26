@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Brain, Bot, User, Send,
   ExternalLink, Copy, CheckCircle, Tag, Lightbulb, Zap,
-  Terminal, Globe, Hash, ArrowUpRight, ArrowDownUp, MessageSquare, Repeat2, X, ChevronRight,
+  Terminal, Globe, ArrowUpRight, ArrowDownUp, X,
   Coins, AlertCircle, Activity
 } from "lucide-react";
-import { SubframeNetworkMap } from "../components/network-map";
 import { TradeModal } from "../components/trade-modal";
 import {
   useGetSubdomainByName,
-  useListSubdomains,
   useGetWalletData,
   useAnalyzeWallet,
   useCreateOpenaiConversation,
@@ -383,6 +381,85 @@ function ERC404Card({
   );
 }
 
+const DEPLOY_STEPS = [
+  "Initializing CloneFactory v3 contract...",
+  "Verifying factory address 0x0b5f...",
+  "Estimating gas: 2,847,392 units",
+  "Calling CloneFactory.createToken()...",
+  "Broadcasting tx to Ethereum mainnet...",
+  "Awaiting block confirmation...",
+  "ERC-404 clone deployed ✓",
+  "Approving Permit2 for PositionManager...",
+  "Computing sqrtPriceX96 for initial ratio...",
+  "Calling PoolManager.initialize() with hook...",
+  "Hook validation passed ✓",
+  "Seeding initial liquidity via UniversalRouter...",
+  "LP position minted ✓",
+  "Verifying pool state on-chain...",
+  "Confirming token mint to deployer...",
+  "Pinning metadata to IPFS...",
+  "Updating ENS text records...",
+  "Indexing contract events...",
+];
+
+function DeployingTerminal() {
+  const [visibleLines, setVisibleLines] = useState<{ text: string; ts: string }[]>([]);
+  const [stepIdx, setStepIdx] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const now = () => {
+      const d = new Date();
+      return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
+    };
+    const delay = stepIdx < 4 ? 600 : stepIdx < 8 ? 1800 : stepIdx < 12 ? 1200 : 900;
+    const timer = setTimeout(() => {
+      const nextIdx = stepIdx % DEPLOY_STEPS.length;
+      setVisibleLines(prev => {
+        const next = [...prev, { text: DEPLOY_STEPS[nextIdx], ts: now() }];
+        return next.slice(-8);
+      });
+      setStepIdx(i => i + 1);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [stepIdx]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [visibleLines]);
+
+  return (
+    <div className="rounded-lg bg-[#050505] border border-white/[0.06] overflow-hidden">
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.05]">
+        <div className="w-2 h-2 rounded-full bg-white/10" />
+        <div className="w-2 h-2 rounded-full bg-white/10" />
+        <div className="w-2 h-2 rounded-full bg-white/10" />
+        <span className="ml-2 text-[10px] font-mono text-white/20 uppercase tracking-widest">deploy log</span>
+      </div>
+      <div ref={containerRef} className="p-3 space-y-1 max-h-[140px] overflow-hidden">
+        {visibleLines.map((line, i) => (
+          <div key={`${i}-${line.text}`} className="flex items-start gap-2 font-mono text-[11px] leading-relaxed">
+            <span className="text-white/20 shrink-0">{line.ts}</span>
+            <span className={i === visibleLines.length - 1 ? "text-[#CBFF4D]/70" : "text-white/30"}>
+              {line.text.endsWith("✓")
+                ? <>{line.text.slice(0,-2)} <span className="text-[#CBFF4D]">✓</span></>
+                : line.text}
+            </span>
+          </div>
+        ))}
+        {visibleLines.length > 0 && (
+          <div className="flex items-center gap-2 font-mono text-[11px]">
+            <span className="text-white/20">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <span className="inline-block w-1.5 h-3.5 bg-[#CBFF4D]/60 animate-pulse" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
   const [copiedAddr, setCopiedAddr] = useState<"token" | "pair" | null>(null);
   const ts = subdomain.tokenStatus;
@@ -454,11 +531,7 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
       </div>
 
       <div className="p-4 space-y-3">
-        {ts === "deploying" && (
-          <p className="text-xs text-white/30 font-mono">
-            Creating ERC-404 token on Uniswap V4...
-          </p>
-        )}
+        {ts === "deploying" && <DeployingTerminal />}
 
         {ts === "deployed" && (
           <>
@@ -933,8 +1006,8 @@ const riskColor = {
 export default function Profile() {
   const { name } = useParams<{ name: string }>();
   const [copied, setCopied] = useState(false);
-  const [csModal, setCsModal] = useState<"messages" | "copytrade" | null>(null);
-  const [ctAmount, setCtAmount] = useState<string>("0.1");
+  const [rightTab, setRightTab] = useState<"transactions" | "chat" | "deploy">("transactions");
+  const [mobileTab, setMobileTab] = useState<"home" | "art" | "chat" | "deploy">("home");
 
   const { data: subdomain, isLoading: subLoading } = useGetSubdomainByName(name, {
     query: {
@@ -948,14 +1021,12 @@ export default function Profile() {
     },
   });
 
-  const { data: allSubdomains } = useListSubdomains();
-
   const { data: walletData, isLoading: walletLoading } = useGetWalletData(
     subdomain?.walletAddress ?? "",
     { query: { enabled: !!subdomain?.walletAddress, queryKey: getGetWalletDataQueryKey(subdomain?.walletAddress ?? "") } }
   );
 
-  const { data: analysis, isLoading: analysisLoading } = useAnalyzeWallet(
+  const { data: analysis } = useAnalyzeWallet(
     subdomain?.walletAddress ?? "",
     { query: { enabled: !!walletData, queryKey: getAnalyzeWalletQueryKey(subdomain?.walletAddress ?? "") } }
   );
@@ -981,7 +1052,6 @@ export default function Profile() {
     return () => clearTimeout(t);
   }, [subLoading, subdomain, isOwnProfile, isConnected]);
 
-  // Check if connected wallet has already set this subdomain as its primary ENS name
   const { data: ensName } = useEnsName({
     address: connectedAddress,
     query: { enabled: isOwnProfile && subdomain?.status === "linked" },
@@ -989,11 +1059,8 @@ export default function Profile() {
   const primaryNameAlreadySet =
     !!ensName && !!subdomain?.ensFullName &&
     ensName.toLowerCase() === subdomain.ensFullName.toLowerCase();
-
-  // Show CTA only on own profile when backend registration is done
   const showPrimaryNameCta = isOwnProfile && subdomain?.status === "linked";
 
-  // Hide the registration log once all ENS + token steps are done
   const allBackendStepsDone = !!(
     subdomain?.ensTx1Hash && subdomain?.ensTx2Hash && subdomain?.ensTx3Hash && subdomain?.ensTx4Hash
     && subdomain?.status === "linked"
@@ -1007,7 +1074,6 @@ export default function Profile() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
 
   if (subLoading) {
     return (
@@ -1027,465 +1093,382 @@ export default function Profile() {
     );
   }
 
-  return (
-    <div className="flex-1 bg-[#0C0C0C]">
-      {/* Coming Soon Modal */}
-      <AnimatePresence>
-        {csModal && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setCsModal(null)}>
-            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              transition={{ duration: 0.2 }}
-              className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#111] overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/30 to-transparent" />
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center">
-                      {csModal === "messages"
-                        ? <MessageSquare className="w-5 h-5 text-[#CBFF4D]" />
-                        : <Repeat2 className="w-5 h-5 text-[#CBFF4D]" />}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black text-white">
-                        {csModal === "messages" ? "Messages" : "Copy Trade"}
-                      </h3>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#CBFF4D]/15 text-[#CBFF4D] border border-[#CBFF4D]/25 uppercase tracking-wider">
-                        Coming Soon
-                      </span>
-                    </div>
-                  </div>
-                  <button onClick={() => setCsModal(null)} className="text-white/30 hover:text-white transition-colors mt-0.5">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+  /* ── shared blocks ──────────────────────────────────────── */
 
-                {csModal === "messages" ? (
-                  <p className="text-sm text-white/40 leading-relaxed">
-                    Send on-chain encrypted messages to this wallet. Powered by XMTP protocol, messages are stored decentrally and readable only by the recipient.
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-sm text-white/40 leading-relaxed mb-4">
-                      Auto-mirror every trade this wallet makes. Choose your position size and we handle execution.
-                    </p>
-                    <div className="flex gap-2 mb-4">
-                      {["0.1", "0.3", "0.5"].map(amt => (
-                        <button
-                          key={amt}
-                          onClick={() => setCtAmount(amt)}
-                          className={`flex-1 py-2.5 rounded-xl border text-sm font-black font-mono transition-all ${
-                            ctAmount === amt
-                              ? "border-[#CBFF4D]/40 bg-[#CBFF4D]/10 text-[#CBFF4D]"
-                              : "border-white/10 bg-white/[0.03] text-white/40 hover:border-white/20"
-                          }`}
-                        >
-                          {amt} ETH
-                        </button>
-                      ))}
-                    </div>
-                    <button className="w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.07] text-white/25 text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed">
-                      <Repeat2 className="w-4 h-4" />
-                      Start Copy Trade
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                    <p className="text-[10px] text-white/20 text-center mt-3">Feature launching soon. Join waitlist via X.</p>
-                  </>
-                )}
-              </div>
-            </motion.div>
+  const ProfileCard = (
+    <div className="relative rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/25 to-transparent" />
+      <div className="p-5">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 rounded-xl bg-[#CBFF4D]/10 blur-lg" />
+            <div className="relative w-16 h-16 rounded-xl bg-[#111] border border-[#CBFF4D]/20 overflow-hidden shadow-[0_0_20px_rgba(203,255,77,0.12)]">
+              {subdomain.avatarUrl ? (
+                <img src={ipfsImg(subdomain.avatarUrl)} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Zap className="w-7 h-7 text-[#CBFF4D] fill-[#CBFF4D]" />
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
-
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-5 py-6 sm:py-10">
-        <div className="grid lg:grid-cols-[1fr_1fr] gap-8 items-start">
-
-          {/* ── LEFT COLUMN ──────────────────────────────── */}
-          <div className="space-y-6">
-
-            {/* Profile Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="relative rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden"
-            >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/25 to-transparent" />
-
-              <div className="p-5">
-                {/* avatar + name row */}
-                <div className="flex items-start gap-4 mb-5">
-                  <div className="relative shrink-0">
-                    <div className="absolute inset-0 rounded-xl bg-[#CBFF4D]/10 blur-lg" />
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#111] border border-[#CBFF4D]/20 overflow-hidden shadow-[0_0_20px_rgba(203,255,77,0.12)]">
-                      {subdomain.avatarUrl ? (
-                        <img src={ipfsImg(subdomain.avatarUrl)} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-[#CBFF4D] fill-[#CBFF4D]" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <h1 className="text-lg sm:text-2xl font-black font-mono text-white break-all" data-testid="profile-ens-name">
-                        {subdomain.ensFullName}
-                      </h1>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-white/25 truncate" data-testid="profile-wallet-address">
-                        {subdomain.walletAddress.slice(0, 12)}...{subdomain.walletAddress.slice(-8)}
-                      </span>
-                      <button onClick={copyAddress} className="text-white/20 hover:text-[#CBFF4D] transition-colors shrink-0">
-                        {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                    {/* ETH balance on mobile — inline below address */}
-                    {walletData && (
-                      <div className="mt-2 flex items-baseline gap-1.5 sm:hidden">
-                        <span className="text-xl font-black font-mono text-white leading-none">{walletData.balanceEth}</span>
-                        <span className="text-xs text-[#CBFF4D] font-bold">ETH</span>
-                        {walletData.balanceUsd && <span className="text-xs text-white/20">${walletData.balanceUsd}</span>}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ETH balance on sm+ — right side */}
-                  {walletLoading && <Loader2 className="hidden sm:block w-4 h-4 animate-spin text-white/30 shrink-0 mt-1" />}
-                  {walletData && (
-                    <div className="hidden sm:block shrink-0 text-right">
-                      <div className="text-2xl font-black font-mono text-white leading-none">
-                        {walletData.balanceEth}
-                      </div>
-                      <div className="text-xs text-[#CBFF4D] font-bold mt-0.5">ETH</div>
-                      {walletData.balanceUsd && (
-                        <div className="text-xs text-white/25 mt-0.5">${walletData.balanceUsd}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* bio */}
-                {subdomain.bio && (
-                  <p className="text-sm text-white/50 leading-relaxed mb-4" data-testid="profile-bio">
-                    {subdomain.bio}
-                  </p>
-                )}
-
-                {/* links */}
-                {subdomain.ipfsCid && (
-                  <div className="flex flex-wrap gap-3">
-                    {subdomain.status === "linked" ? (
-                      <a
-                        href={`https://subframe.eth.limo/${subdomain.name}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#CBFF4D] hover:text-[#CBFF4D]/80 transition-colors"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
-                        subframe.eth.limo/{subdomain.name}
-                        <ArrowUpRight className="w-3 h-3" />
-                      </a>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-white/25">
-                        <Globe className="w-3 h-3" />
-                        {subdomain.ensFullName}.limo
-                        <span className="text-white/15">(ENS pending)</span>
-                      </span>
-                    )}
-                    <a
-                      href={`https://gateway.pinata.cloud/ipfs/${subdomain.ipfsCid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-white/20 hover:text-white/40 transition-colors"
-                    >
-                      <Hash className="w-3 h-3" />
-                      IPFS raw
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                )}
-
-                {/* tx count */}
-                {walletData && (
-                  <div className="mt-4 pt-4 border-t border-white/[0.05] flex items-center gap-4 text-xs font-mono text-white/25">
-                    <span>{(walletData.txCount ?? 0).toLocaleString()} transactions</span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Action Buttons: Messages + Copy Trade */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.08 }}
-              className="flex gap-3"
-            >
-              <button
-                onClick={() => setCsModal("messages")}
-                className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl border border-white/[0.08] bg-[#0e0e0e] hover:border-[#CBFF4D]/25 hover:bg-[#CBFF4D]/[0.04] transition-all group"
-              >
-                <MessageSquare className="w-4 h-4 text-white/35 group-hover:text-[#CBFF4D] transition-colors" />
-                <span className="text-sm font-bold text-white/50 group-hover:text-white transition-colors">Messages</span>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-black font-mono text-white break-all mb-1" data-testid="profile-ens-name">
+              {subdomain.ensFullName}
+            </h1>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs text-white/25 truncate" data-testid="profile-wallet-address">
+                {subdomain.walletAddress.slice(0, 10)}...{subdomain.walletAddress.slice(-6)}
+              </span>
+              <button onClick={copyAddress} className="text-white/20 hover:text-[#CBFF4D] transition-colors shrink-0">
+                {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
-              <button
-                onClick={() => setCsModal("copytrade")}
-                className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl border border-white/[0.08] bg-[#0e0e0e] hover:border-[#CBFF4D]/25 hover:bg-[#CBFF4D]/[0.04] transition-all group"
-              >
-                <Repeat2 className="w-4 h-4 text-white/35 group-hover:text-[#CBFF4D] transition-colors" />
-                <span className="text-sm font-bold text-white/50 group-hover:text-white transition-colors">Copy Trade</span>
-              </button>
-            </motion.div>
-
-            {/* Art Token Card — shown for all statuses */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.09 }}
-            >
-              <ArtTokenCard subdomain={subdomain} />
-            </motion.div>
-
-            {/* Registration Log — hidden once all backend steps are done */}
-            {!allBackendStepsDone && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-              >
-                <RegistrationLog subdomain={subdomain} />
-              </motion.div>
-            )}
-
-            {/* Primary Name CTA — only for own profile, only when not yet set */}
-            {showPrimaryNameCta && !primaryNameAlreadySet && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.1 }}
-                className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.03] p-4 flex items-center gap-3"
-              >
-                <div className="shrink-0 w-8 h-8 rounded-full bg-[#CBFF4D]/10 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-[#CBFF4D] fill-[#CBFF4D]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white leading-snug">Set as Primary ENS Name</p>
-                  <p className="text-xs text-white/25 mt-0.5 leading-snug">
-                    Make <span className="font-mono text-[#CBFF4D]/60">{subdomain.ensFullName}</span> appear on Etherscan
-                  </p>
-                </div>
-                <button
-                  onClick={() => setLocation(`/onboarding/${subdomain.name}`)}
-                  className="shrink-0 px-3 py-1.5 btn-lime rounded-lg text-xs font-bold text-black"
-                >
-                  Set now
-                </button>
-              </motion.div>
-            )}
-
-            {/* Recent Transactions */}
-            {walletData && walletData.lastTransactions.length > 0 && (
-              <motion.section
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.15 }}
-              >
-                <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                  <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
-                  Recent Transactions
-                </h2>
-                <div className="rounded-xl border border-white/[0.06] bg-[#0e0e0e] overflow-hidden">
-                  {walletData.lastTransactions.map((tx, i) => (
-                    <div
-                      key={tx.hash}
-                      className={`flex items-center justify-between px-4 py-3.5 ${i < walletData.lastTransactions.length - 1 ? "border-b border-white/[0.04]" : ""} hover:bg-white/[0.02] transition-colors`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${tx.status === "success" ? "bg-emerald-400" : "bg-red-400"}`} />
-                        <div className="min-w-0">
-                          <div className="font-mono text-xs text-white/35 truncate">{tx.hash.slice(0, 18)}...</div>
-                          <div className="text-xs text-white/20 mt-0.5">
-                            {tx.from.slice(0, 8)}... to {tx.to ? `${tx.to.slice(0, 8)}...` : "Contract"}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        {tx.method && (
-                          <span className="hidden sm:inline text-xs bg-[#CBFF4D]/8 text-[#CBFF4D]/60 px-2 py-0.5 rounded font-mono border border-[#CBFF4D]/10">
-                            {tx.method}
-                          </span>
-                        )}
-                        <span className="font-mono text-xs font-bold text-white whitespace-nowrap">
-                          {tx.valueEth} <span className="text-[#CBFF4D]">ETH</span>
-                        </span>
-                        <a href={`https://etherscan.io/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer" className="text-white/15 hover:text-[#CBFF4D] transition-colors">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* AI Analysis */}
-            {analysisLoading && (
-              <div className="flex items-center gap-2.5 text-white/30 text-sm">
-                <Loader2 className="w-4 h-4 animate-spin text-[#CBFF4D]" />
-                <span>Generating AI analysis...</span>
+              <a href={`https://etherscan.io/address/${subdomain.walletAddress}`} target="_blank" rel="noopener noreferrer" className="text-white/15 hover:text-[#CBFF4D]/60 transition-colors shrink-0">
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            {walletData && (
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className="text-lg font-black font-mono text-white leading-none">{walletData.balanceEth}</span>
+                <span className="text-xs text-[#CBFF4D] font-bold">ETH</span>
+                {walletData.balanceUsd && <span className="text-xs text-white/20">${walletData.balanceUsd}</span>}
               </div>
             )}
-            {analysis && (
-              <motion.section
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-              >
-                <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                  <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
-                  AI Wallet Analysis
-                </h2>
-                <div className="relative p-5 rounded-xl border border-[#CBFF4D]/10 bg-gradient-to-b from-[#CBFF4D]/[0.03] to-transparent overflow-hidden">
-                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/20 to-transparent" />
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[#CBFF4D]/10 border border-[#CBFF4D]/15 flex items-center justify-center">
-                        <Brain className="w-3.5 h-3.5 text-[#CBFF4D]" />
-                      </div>
-                      <span className="font-semibold text-white/80 text-sm">{analysis.activityType}</span>
-                    </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full border font-mono ${riskColor[analysis.riskLevel as keyof typeof riskColor] ?? riskColor.low}`}>
-                      Risk: {analysis.riskLevel}
-                    </span>
-                  </div>
-                  <div className="p-3.5 rounded-lg bg-white/[0.03] border border-white/[0.05] mb-3">
-                    <p className="text-sm text-white/55 leading-relaxed">{analysis.summary}</p>
-                  </div>
-                  {analysis.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {analysis.tags.map((tag) => (
-                        <span key={tag} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#CBFF4D]/8 border border-[#CBFF4D]/12 text-xs text-[#CBFF4D]/60">
-                          <Tag className="w-2.5 h-2.5" /> {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {analysis.insights.length > 0 && (
-                    <div>
-                      <div className="text-xs font-semibold text-white/20 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Lightbulb className="w-3 h-3 text-amber-400" /> Insights
-                      </div>
-                      <ul className="space-y-1.5">
-                        {analysis.insights.map((ins, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-white/50">
-                            <span className="text-[#CBFF4D] mt-0.5 shrink-0 text-xs">+</span>{ins}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </motion.section>
-            )}
-
+            {walletLoading && <Loader2 className="mt-2 w-4 h-4 animate-spin text-white/30" />}
           </div>
-
-          {/* ── RIGHT COLUMN: map + chat ─────────────────── */}
-          <div className="lg:sticky lg:top-6 flex flex-col gap-6 lg:h-[calc(100vh-120px)]">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="shrink-0 h-[390px]"
-            >
-              <SubframeNetworkMap
-                subdomains={allSubdomains ?? []}
-                currentName={name}
-              />
-            </motion.div>
-
-            {subdomain.walletAddress && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="shrink-0 flex flex-col"
-                style={{ height: "calc(100vh - 350px)", minHeight: "480px" }}
-              >
-                <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider shrink-0">
-                  <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
-                  AI Chat
-                </h2>
-                <div className="flex-1 min-h-0">
-                  <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
-                </div>
-              </motion.div>
-            )}
-          </div>
-
         </div>
 
-        {/* Deploy AI Agent */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="mt-6"
-        >
-          <h2 className="text-sm font-bold text-white/50 mb-3 flex items-center gap-2 uppercase tracking-wider">
-            <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
-            Deploy AI Agent
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            <a
-              href={`https://twitter.com/intent/tweet?text=Check+out+${subdomain.ensFullName}+on+Subframe+Protocol+%F0%9F%94%97&url=https%3A%2F%2Fsubframe.eth.limo%2F${subdomain.name}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/[0.07] bg-[#0e0e0e] hover:border-white/[0.15] hover:bg-white/[0.03] transition-all duration-200 overflow-hidden"
-            >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              <span className="absolute top-2.5 right-2.5 text-[9px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-white/30">Soon</span>
-              <div className="w-11 h-11 rounded-xl bg-black border border-white/[0.1] flex items-center justify-center group-hover:border-white/25 transition-colors">
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" aria-label="X">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-                </svg>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-bold text-white/80 group-hover:text-white transition-colors">Deploy to X</div>
-                <div className="text-xs text-white/30 mt-0.5">Share as AI agent on X</div>
-              </div>
-            </a>
+        {subdomain.bio && (
+          <p className="text-sm text-white/50 leading-relaxed mb-4" data-testid="profile-bio">
+            {subdomain.bio}
+          </p>
+        )}
 
+        <div className="flex flex-wrap items-center gap-3">
+          {subdomain.ipfsCid && subdomain.status === "linked" ? (
             <a
-              href={`https://t.me/share/url?url=https%3A%2F%2Fsubframe.eth.limo%2F${subdomain.name}&text=Check+out+${subdomain.ensFullName}+on+Subframe+Protocol`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/[0.07] bg-[#0e0e0e] hover:border-[#229ED9]/30 hover:bg-[#229ED9]/[0.04] transition-all duration-200 overflow-hidden"
+              href={`https://subframe.eth.limo/${subdomain.name}`}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#CBFF4D] hover:text-[#CBFF4D]/80 transition-colors"
             >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#229ED9]/15 to-transparent" />
-              <span className="absolute top-2.5 right-2.5 text-[9px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-white/30">Soon</span>
-              <div className="w-11 h-11 rounded-xl bg-[#229ED9]/10 border border-[#229ED9]/20 flex items-center justify-center group-hover:border-[#229ED9]/40 transition-colors">
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#229ED9]" aria-label="Telegram">
-                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                </svg>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-bold text-white/80 group-hover:text-white transition-colors">Deploy to Telegram</div>
-                <div className="text-xs text-white/30 mt-0.5">Share as AI agent on Telegram</div>
-              </div>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] animate-pulse" />
+              subframe.eth.limo/{subdomain.name}
+              <ArrowUpRight className="w-3 h-3" />
+            </a>
+          ) : subdomain.ipfsCid ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-white/25">
+              <Globe className="w-3 h-3" />
+              {subdomain.ensFullName}.limo
+              <span className="text-white/15">(ENS pending)</span>
+            </span>
+          ) : null}
+          {/* Share shortcuts */}
+          <a
+            href={`https://twitter.com/intent/tweet?text=Check+out+${subdomain.ensFullName}+%F0%9F%94%97&url=https%3A%2F%2Fsubframe.eth.limo%2F${subdomain.name}`}
+            target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/35 hover:text-white/70 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current shrink-0" aria-label="X">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+            </svg>
+            Share
+          </a>
+          {walletData && (
+            <span className="text-xs text-white/20 font-mono">{(walletData.txCount ?? 0).toLocaleString()} txns</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* Primary Name CTA */
+  const PrimaryNameCta = showPrimaryNameCta && !primaryNameAlreadySet ? (
+    <div className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.03] p-4 flex items-center gap-3">
+      <div className="shrink-0 w-8 h-8 rounded-full bg-[#CBFF4D]/10 flex items-center justify-center">
+        <Zap className="w-4 h-4 text-[#CBFF4D] fill-[#CBFF4D]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-white leading-snug">Set as Primary ENS Name</p>
+        <p className="text-xs text-white/25 mt-0.5 leading-snug">
+          Make <span className="font-mono text-[#CBFF4D]/60">{subdomain.ensFullName}</span> appear on Etherscan
+        </p>
+      </div>
+      <button
+        onClick={() => setLocation(`/onboarding/${subdomain.name}`)}
+        className="shrink-0 px-3 py-1.5 btn-lime rounded-lg text-xs font-bold text-black"
+      >
+        Set now
+      </button>
+    </div>
+  ) : null;
+
+  /* Deploy buttons — compact row */
+  const DeployButtons = (
+    <div className="space-y-2">
+      <h2 className="text-xs font-bold text-white/30 flex items-center gap-2 uppercase tracking-widest">
+        <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
+        Deploy AI Agent
+      </h2>
+      <div className="grid grid-cols-2 gap-2">
+        <a
+          href={`https://twitter.com/intent/tweet?text=Check+out+${subdomain.ensFullName}+on+Subframe+Protocol+%F0%9F%94%97&url=https%3A%2F%2Fsubframe.eth.limo%2F${subdomain.name}`}
+          target="_blank" rel="noopener noreferrer"
+          className="group relative flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.07] bg-[#0e0e0e] hover:border-white/[0.15] hover:bg-white/[0.03] transition-all overflow-hidden"
+        >
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="w-8 h-8 rounded-lg bg-black border border-white/[0.1] flex items-center justify-center shrink-0 group-hover:border-white/25 transition-colors">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white" aria-label="X">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">Deploy to X</div>
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.08] text-white/25 uppercase tracking-wider">Soon</span>
+          </div>
+        </a>
+        <a
+          href={`https://t.me/share/url?url=https%3A%2F%2Fsubframe.eth.limo%2F${subdomain.name}&text=Check+out+${subdomain.ensFullName}+on+Subframe+Protocol`}
+          target="_blank" rel="noopener noreferrer"
+          className="group relative flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.07] bg-[#0e0e0e] hover:border-[#229ED9]/30 hover:bg-[#229ED9]/[0.04] transition-all overflow-hidden"
+        >
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#229ED9]/15 to-transparent" />
+          <div className="w-8 h-8 rounded-lg bg-[#229ED9]/10 border border-[#229ED9]/20 flex items-center justify-center shrink-0 group-hover:border-[#229ED9]/40 transition-colors">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#229ED9]" aria-label="Telegram">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">Deploy to Telegram</div>
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/[0.08] text-white/25 uppercase tracking-wider">Soon</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  );
+
+  /* Transactions panel */
+  const TransactionsContent = (
+    <div className="relative rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#CBFF4D]/25 to-transparent" />
+      {walletLoading && (
+        <div className="flex items-center gap-2.5 text-white/30 text-sm p-4">
+          <Loader2 className="w-4 h-4 animate-spin text-[#CBFF4D]" />
+          <span>Loading transactions...</span>
+        </div>
+      )}
+      {walletData && (
+        <>
+          <div className="px-4 py-3 border-b border-white/[0.05] flex items-center gap-3">
+            <span className="text-xs font-mono text-white/25 flex-1">{(walletData.txCount ?? 0).toLocaleString()} total transactions</span>
+            <a href={`https://etherscan.io/address/${subdomain.walletAddress}`} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-white/20 hover:text-[#CBFF4D]/60 transition-colors">
+              <ExternalLink className="w-3 h-3" />
+              Etherscan
             </a>
           </div>
-        </motion.div>
+          {walletData.lastTransactions && walletData.lastTransactions.length > 0 ? (
+            <div>
+              {walletData.lastTransactions.map((tx, i) => (
+                <a key={tx.hash} href={`https://etherscan.io/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer"
+                  className={`flex items-center justify-between px-4 py-3.5 hover:bg-white/[0.03] transition-colors group ${i < walletData.lastTransactions.length - 1 ? "border-b border-white/[0.04]" : ""}`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${tx.status === "success" ? "bg-emerald-400" : "bg-red-400"}`} />
+                    <div className="min-w-0">
+                      <div className="font-mono text-xs text-white/35 truncate group-hover:text-white/55 transition-colors">
+                        {tx.hash.slice(0, 12)}...{tx.hash.slice(-6)}
+                      </div>
+                      <div className="text-xs text-white/20 mt-0.5">
+                        {tx.from.slice(0, 8)}... to {tx.to ? `${tx.to.slice(0, 8)}...` : "Contract"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    {tx.method && (
+                      <span className="text-xs bg-[#CBFF4D]/8 text-[#CBFF4D]/60 px-2 py-0.5 rounded font-mono border border-[#CBFF4D]/10">
+                        {tx.method}
+                      </span>
+                    )}
+                    <span className="font-mono text-xs font-bold text-white whitespace-nowrap">
+                      {tx.valueEth} <span className="text-[#CBFF4D]">ETH</span>
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-4 text-xs text-white/20 font-mono">No recent transactions</div>
+          )}
+        </>
+      )}
+      {!walletLoading && !walletData && (
+        <div className="px-4 py-4 text-xs text-white/20 font-mono">No wallet data available</div>
+      )}
+    </div>
+  );
 
+  /* ── render ─────────────────────────────────────────────── */
+
+  return (
+    <div className="flex-1 bg-[#0C0C0C] flex flex-col overflow-hidden">
+
+      {/* ═══ DESKTOP (lg+): 2-column full-height ═══ */}
+      <div className="hidden lg:flex flex-1 min-h-0">
+
+        {/* Left 60%: static column — only art scrolls internally */}
+        <div className="w-[60%] shrink-0 flex flex-col px-6 py-5 gap-5 min-h-0 overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="shrink-0">
+            {ProfileCard}
+          </motion.div>
+
+          {PrimaryNameCta && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.06 }} className="shrink-0">
+              {PrimaryNameCta}
+            </motion.div>
+          )}
+
+          {!allBackendStepsDone && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.08 }} className="shrink-0">
+              <RegistrationLog subdomain={subdomain} />
+            </motion.div>
+          )}
+
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="flex-1 min-h-0 flex flex-col">
+            <h2 className="text-xs font-bold text-white/30 mb-3 flex items-center gap-2 uppercase tracking-widest shrink-0">
+              <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
+              Art Collection
+            </h2>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ArtTokenGallery
+                subdomainName={subdomain.name}
+                tokenAddress={subdomain.tokenAddress}
+                tokenStatus={subdomain.tokenStatus}
+                isOwnProfile={isOwnProfile}
+              />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Right 40%: tabbed panel */}
+        <div className="w-[40%] shrink-0 flex flex-col py-5 pr-6 min-h-0">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex flex-col flex-1 min-h-0 rounded-2xl border border-white/[0.07] bg-[#0e0e0e] overflow-hidden"
+          >
+            {/* Tab bar */}
+            <div className="shrink-0 flex border-b border-white/[0.06] bg-[#080808]">
+              {(["transactions", "chat", "deploy"] as const).map((tab) => {
+                const labels: Record<string, string> = { transactions: "Transactions", chat: "AI Chat", deploy: "Deploy Agent" };
+                const icons: Record<string, React.ReactElement> = {
+                  transactions: <Activity className="w-3.5 h-3.5" />,
+                  chat: <Bot className="w-3.5 h-3.5" />,
+                  deploy: <Zap className="w-3.5 h-3.5" />,
+                };
+                return (
+                  <button key={tab} onClick={() => setRightTab(tab)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
+                      rightTab === tab ? "border-[#CBFF4D] text-[#CBFF4D]" : "border-transparent text-white/30 hover:text-white/60"
+                    }`}>
+                    {icons[tab]}
+                    <span>{labels[tab]}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Tab content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {rightTab === "transactions" && (
+                <div className="h-full overflow-y-auto p-5">{TransactionsContent}</div>
+              )}
+              {rightTab === "chat" && (
+                <div className="h-full overflow-hidden flex flex-col">
+                  {subdomain.walletAddress
+                    ? <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
+                    : <div className="p-5 text-xs text-white/20 font-mono">No wallet connected</div>}
+                </div>
+              )}
+              {rightTab === "deploy" && (
+                <div className="h-full overflow-y-auto p-5">{DeployButtons}</div>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </div>
+
+      {/* ═══ MOBILE (<lg): scrollable + bottom nav ═══ */}
+      <div className="flex lg:hidden flex-col flex-1 min-h-0">
+
+        {/* Scrollable tabs: home / deploy */}
+        {(mobileTab === "home" || mobileTab === "deploy") && (
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            {mobileTab === "home" && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-4">
+                {ProfileCard}
+                {PrimaryNameCta}
+                {!allBackendStepsDone && <RegistrationLog subdomain={subdomain} />}
+                {DeployButtons}
+              </motion.div>
+            )}
+            {mobileTab === "deploy" && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-4">
+                <h2 className="text-xs font-bold text-white/30 mb-3 flex items-center gap-2 uppercase tracking-widest">
+                  <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
+                  Transactions
+                </h2>
+                {TransactionsContent}
+              </motion.div>
+            )}
+          </div>
+        )}
+
+        {/* Art tab — flex-1 so gallery fills space above nav with internal scroll */}
+        {mobileTab === "art" && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+            className="flex-1 min-h-0 flex flex-col px-4 pt-4 pb-2 gap-3">
+            <h2 className="text-xs font-bold text-white/30 flex items-center gap-2 uppercase tracking-widest shrink-0">
+              <div className="w-1 h-3 rounded-full bg-[#CBFF4D]/60" />
+              Art Collection
+            </h2>
+            <div className="flex-1 min-h-0 flex flex-col">
+              <ArtTokenGallery
+                subdomainName={subdomain.name}
+                tokenAddress={subdomain.tokenAddress}
+                tokenStatus={subdomain.tokenStatus}
+                isOwnProfile={isOwnProfile}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Chat tab — flex-1 so chat fills space above nav */}
+        {mobileTab === "chat" && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+            className="flex-1 min-h-0 flex flex-col">
+            <AiChat address={subdomain.walletAddress} walletData={walletData} analysis={analysis} />
+          </motion.div>
+        )}
+
+        {/* Bottom nav */}
+        <nav className="shrink-0 flex border-t border-white/[0.08] bg-black/90 backdrop-blur-xl safe-bottom">
+          {(([
+            { id: "home",   label: "Home",    icon: <User className="w-5 h-5" /> },
+            { id: "art",    label: "Art",     icon: <Coins className="w-5 h-5" /> },
+            { id: "chat",   label: "AI Chat", icon: <Bot className="w-5 h-5" /> },
+            { id: "deploy", label: "Activity", icon: <Activity className="w-5 h-5" /> },
+          ]) as Array<{ id: "home"|"art"|"chat"|"deploy"; label: string; icon: React.ReactElement }>).map((item) => (
+            <button key={item.id} onClick={() => setMobileTab(item.id)}
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-3 transition-all ${
+                mobileTab === item.id ? "text-[#CBFF4D]" : "text-white/25 hover:text-white/50"
+              }`}>
+              {mobileTab === item.id && <div className="absolute top-0 w-8 h-0.5 bg-[#CBFF4D] rounded-full" />}
+              {item.icon}
+              <span className="text-[10px] font-bold">{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
     </div>
   );
 }
