@@ -1,5 +1,9 @@
+import { eq } from "drizzle-orm";
+import { db, artVariationsTable } from "@workspace/db";
+
 const PINATA_JWT = process.env["PINATA_JWT"] ?? "";
 const PINATA_FILE_API = "https://api.pinata.cloud/pinning/pinFileToIPFS";
+const PINATA_V3_API   = "https://uploads.pinata.cloud/v3/files";
 const IPFS_GATEWAY = "https://ipfs.io/ipfs";
 
 /* App URL for "View full profile" link — prefer explicit env var,
@@ -458,6 +462,98 @@ export async function uploadAvatarToIPFS(imageBase64: string, mimeType: string):
 
 export function limoUrl(ensFullName: string): string {
   return `https://${ensFullName}.limo`;
+}
+
+/**
+ * Upload art NFT metadata folder to Pinata (pinFileToIPFS V2, wrapWithDirectory=true).
+ *
+ * Reads all 69 art_variations for the given subdomainId from the database,
+ * builds one JSON metadata file per variation (0.json … 68.json), uploads
+ * them as a single Pinata folder and returns the base URI.
+ *
+ * Returns `ipfs://<folderCid>/` on success, or null if Pinata is unavailable
+ * or fewer than 69 variations exist in the DB.
+ */
+export async function uploadArtMetadataFolder(
+  subdomainId:   number,
+  subdomainName: string,
+  tokenName:     string,
+): Promise<string | null> {
+  if (!PINATA_JWT) {
+    console.warn("[IPFS] PINATA_JWT not set — skipping art metadata upload");
+    return null;
+  }
+
+  const rows = await db
+    .select()
+    .from(artVariationsTable)
+    .where(eq(artVariationsTable.subdomainId, subdomainId))
+    .orderBy(artVariationsTable.variationIndex);
+
+  if (rows.length < 69) {
+    console.error(`[IPFS] Only ${rows.length}/69 art variations in DB for subdomain ${subdomainId} — cannot upload`);
+    return null;
+  }
+
+  const ensFullName = `${subdomainName}.subframe.eth`;
+  const formData = new FormData();
+
+  for (const row of rows) {
+    const idx  = row.variationIndex;
+    const cid  = row.ipfsCid ?? "";
+    if (!cid) {
+      console.warn(`[IPFS] Variation ${idx} has no ipfs_cid — skipping NFT metadata for it`);
+      continue;
+    }
+    const metadata = {
+      name:         `${tokenName} #${idx}`,
+      description:  `${ensFullName} — NFT #${idx} (${row.style}). Subframe Protocol identity token.`,
+      image:        `ipfs://${cid}`,
+      external_url: `https://${ensFullName}`,
+      attributes: [
+        { trait_type: "Style",    value: row.style      },
+        { trait_type: "Variation", value: idx            },
+        { trait_type: "Protocol", value: "Subframe"      },
+        { trait_type: "ENS",      value: ensFullName      },
+      ],
+    };
+    // Pinata folder upload requires ALL files to share a common directory prefix
+    formData.append(
+      "file",
+      new File([JSON.stringify(metadata, null, 2)], `metadata/${idx}.json`, { type: "application/json" }),
+    );
+  }
+
+  // Add Pinata options to trigger folder (directory) pin
+  formData.append("pinataOptions",  JSON.stringify({ cidVersion: 1, wrapWithDirectory: true }));
+  formData.append("pinataMetadata", JSON.stringify({ name: `${subdomainName}-art-metadata` }));
+
+  try {
+    const res = await fetch(PINATA_FILE_API, {
+      method:  "POST",
+      headers: { Authorization: `Bearer ${PINATA_JWT}` },
+      body:    formData,
+      signal:  AbortSignal.timeout(120_000),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`[IPFS] Pinata folder upload failed ${res.status}: ${text.slice(0, 300)}`);
+      return null;
+    }
+    const data = await res.json() as { IpfsHash?: string };
+    const folderCid = data?.IpfsHash ?? null;
+    if (!folderCid) {
+      console.error(`[IPFS] Pinata response missing IpfsHash: ${JSON.stringify(data).slice(0, 300)}`);
+      return null;
+    }
+    console.log(`[IPFS] Art metadata folder CID: ${folderCid}`);
+    // Files are uploaded as metadata/${idx}.json so tokenURI(n) must resolve
+    // to ipfs://<CID>/metadata/<n>.json — include the /metadata/ path segment.
+    return `ipfs://${folderCid}/metadata/`;
+  } catch (err) {
+    console.error("[IPFS] Art metadata folder upload error:", err);
+    return null;
+  }
 }
 
 /* Upload a redirect SPA for subframe.eth (parent domain).
