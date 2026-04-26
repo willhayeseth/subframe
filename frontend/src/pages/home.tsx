@@ -189,9 +189,9 @@ function ArtAnim() {
 
       <div className="grid grid-cols-2 gap-2.5">
         <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
-          <div className="text-[15px] font-black font-mono text-[#CBFF4D] leading-none">0.5%</div>
+          <div className="text-[15px] font-black font-mono text-[#CBFF4D] leading-none">V4</div>
           <div className="text-[8.5px] text-white/30 mt-1.5 uppercase tracking-widest leading-tight">
-            Creator Fee
+            Uniswap Hook
           </div>
         </div>
         <div className="text-center py-3 px-2 rounded-xl bg-white/[0.04] border border-white/[0.07]">
@@ -307,7 +307,7 @@ export default function Home() {
                 {[
                   { v: stats.totalSubdomains, l: "Subdomains" },
                   { v: stats.linkedToIPFS, l: "Active" },
-                  { v: 0, l: "Art" },
+                  { v: stats.tokenDeployed, l: "Art" },
                 ].map((s) => (
                   <div key={s.l}>
                     <div className="text-3xl font-black font-mono text-[#CBFF4D]">{s.v}</div>
@@ -345,7 +345,7 @@ export default function Home() {
                 {[
                   { v: stats.totalSubdomains, l: "Subdomains" },
                   { v: stats.linkedToIPFS, l: "Active" },
-                  { v: 0, l: "Art" },
+                  { v: stats.tokenDeployed, l: "Art" },
                 ].map((s) => (
                   <div key={s.l}>
                     <div className="text-3xl font-black font-mono text-[#CBFF4D] leading-none">{s.v}</div>
@@ -411,7 +411,7 @@ export default function Home() {
           number="04"
           title="Turn your PFP into"
           titleAccent="tradable art"
-          desc="Upload any image when you claim your identity. It becomes an ERC-404 token tradeable on Uniswap via a V4 hook. You earn 0.5% from every trade, forever. Each buyer gets a unique art variation."
+          desc="Upload any image when you claim your identity. It becomes an ERC-404 token tradeable on Uniswap via a V4 hook. Each buyer gets a unique art variation generated on-chain."
           animation={<ArtAnim />}
           reverse
           ctaLabel="Start Creating"

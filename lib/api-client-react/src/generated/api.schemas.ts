@@ -103,6 +103,7 @@ export interface ProtocolStats {
   totalSubdomains: number;
   activeSubdomains: number;
   linkedToIPFS: number;
+  tokenDeployed: number;
   recentClaims: Subdomain[];
 }
 

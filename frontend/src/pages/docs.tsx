@@ -572,7 +572,7 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
           ["Upload image", "Upload any JPG, PNG, WebP, or GIF during the claim step. Subframe stores it on IPFS and uses the CID as token URI."],
           ["Edition created", "The protocol calls createArt on the SubframeArtProtocol contract, issuing a new token ID with your wallet as the creator address."],
           ["Bonding curve goes live", "Price starts at 0.001 ETH and rises by 0.0001 ETH per edition minted. Anyone can mint or burn at the exact on-chain price at any time."],
-          ["Fees flow forever", "Every mint or burn triggers a 1% fee split: 0.5% to your wallet, 0.5% to the protocol treasury."],
+          ["Live on Uniswap V4", "Your token is immediately tradeable on Uniswap V4 with real market-driven price discovery from the first trade."],
         ].map(([label, desc], i) => (
           <Step key={label} number={i + 1} title={label}>
             {desc}
@@ -586,8 +586,6 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
           {[
             ["Mint fee", "1% of the mint price is deducted on every edition minted."],
             ["Burn fee", "1% of the burn payout is deducted on every edition burned."],
-            ["Creator share", "0.5% goes directly to the creator wallet address on every mint and burn."],
-            ["Protocol share", "0.5% goes to the Subframe Protocol treasury."],
             ["Deployment gas", "Zero. Subframe Protocol covers all contract and token creation gas."],
           ].map(([label, desc]) => (
             <div key={label} className="flex gap-3 px-4 py-3.5 rounded-xl" style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -619,8 +617,8 @@ const PAGES: Record<string, { breadcrumb: string; sections: DocSection[]; conten
         <H2 id="pricing">Uniswap V4 pricing</H2>
         <P>Price is determined entirely by Uniswap V4 market mechanics. As demand increases the price rises and as holders sell the price falls, following the standard AMM model.</P>
         <Callout type="info">Because liquidity lives on Uniswap, the token benefits from all standard Uniswap V4 features including concentrated liquidity, hooks, and deep router integrations.</Callout>
-        <H2 id="royalties">Creator royalties</H2>
-        <P>Royalties are trustless and automatic. The creator address is recorded at token creation time and cannot be changed. Every trade sends 0.5% of the transaction value directly to the creator wallet. No claim step is needed. No platform intermediary holds the funds.</P>
+        <H2 id="royalties">Creator identity</H2>
+        <P>The creator address is recorded at token creation time and cannot be changed. Your wallet is permanently linked to your token on-chain.</P>
       </>
     ),
   },

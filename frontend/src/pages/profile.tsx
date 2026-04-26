@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Brain, Bot, User, Send,
   ExternalLink, Copy, CheckCircle, Tag, Lightbulb, Zap,
-  Terminal, Globe, Hash, ArrowUpRight, MessageSquare, Repeat2, X, ChevronRight,
+  Terminal, Globe, Hash, ArrowUpRight, ArrowDownUp, MessageSquare, Repeat2, X, ChevronRight,
   Coins, AlertCircle, Activity
 } from "lucide-react";
 import { SubframeNetworkMap } from "../components/network-map";
+import { TradeModal } from "../components/trade-modal";
 import {
   useGetSubdomainByName,
   useListSubdomains,
@@ -279,19 +280,17 @@ function ArtVariationImage({
 
 /**
  * ERC404Card — shows on-chain token stats and NFT holdings for a deployed ERC-404 token.
- * Trading is done externally via Uniswap V4.
  */
 function ERC404Card({
   contractAddress,
   tokenSymbol,
   subdomainName,
-  uniswapUrl,
 }: {
   contractAddress: string;
   tokenSymbol?: string | null;
   subdomainName: string;
-  uniswapUrl: string | null;
 }) {
+  const [tradeOpen, setTradeOpen] = useState(false);
   const { address: userAddress } = useAccount();
   const addr = contractAddress as `0x${string}`;
 
@@ -361,25 +360,25 @@ function ERC404Card({
         </div>
       )}
 
-      {uniswapUrl ? (
-        <a
-          href={uniswapUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#CBFF4D] text-[#0C0C0C] text-sm font-bold hover:bg-[#CBFF4D]/90 transition-colors"
-        >
-          <ArrowUpRight className="w-4 h-4" />
-          Trade on Uniswap V4
-        </a>
-      ) : (
-        <div className="flex items-center justify-center w-full py-2.5 rounded-xl bg-white/5 border border-white/[0.06] text-white/25 text-sm font-mono">
-          Pool seeding in progress...
-        </div>
-      )}
+      <button
+        onClick={() => setTradeOpen(true)}
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#CBFF4D] text-[#0C0C0C] text-sm font-bold hover:bg-[#CBFF4D]/90 transition-colors"
+      >
+        <ArrowDownUp className="w-4 h-4" />
+        Trade ${tokenSymbol ?? "..."}
+      </button>
 
       {!userAddress && (
         <p className="text-center text-xs text-white/25 font-mono">Connect wallet to view your balance</p>
       )}
+
+      <TradeModal
+        open={tradeOpen}
+        onClose={() => setTradeOpen(false)}
+        tokenAddress={contractAddress}
+        tokenSymbol={tokenSymbol ?? "TOKEN"}
+        subdomainName={subdomainName}
+      />
     </div>
   );
 }
@@ -475,7 +474,6 @@ function ArtTokenCard({ subdomain }: { subdomain: Subdomain }) {
                 contractAddress={subdomain.tokenAddress}
                 tokenSymbol={subdomain.tokenSymbol}
                 subdomainName={subdomain.name}
-                uniswapUrl={`https://app.uniswap.org/swap?chain=mainnet&outputCurrency=${subdomain.tokenAddress}`}
               />
             )}
 
@@ -672,6 +670,8 @@ function ArtTokenGallery({ subdomainName, tokenAddress, tokenStatus, isOwnProfil
   const [genProgress, setGenProgress] = useState(0);
   const [genTotal, setGenTotal] = useState(69);
   const [selected, setSelected] = useState<ArtVariationItem | null>(null);
+  const [tradeOpen, setTradeOpen] = useState(false);
+  const [tradeTab, setTradeTab] = useState<"buy" | "sell">("buy");
   const controllerRef = useRef<AbortController | null>(null);
   const didAutoStart = useRef(false);
 
@@ -772,10 +772,6 @@ function ArtTokenGallery({ subdomainName, tokenAddress, tokenStatus, isOwnProfil
     return () => stopPolling();
   }, [subdomainName]);
 
-  const uniswapUrl = tokenAddress
-    ? `https://app.uniswap.org/swap?chain=mainnet&outputCurrency=${tokenAddress}`
-    : null;
-
   if (loading) {
     return (
       <div className="rounded-2xl border border-white/[0.07] bg-[#0e0e0e] p-6 flex items-center gap-2 flex-1 min-h-0">
@@ -796,12 +792,13 @@ function ArtTokenGallery({ subdomainName, tokenAddress, tokenStatus, isOwnProfil
           {variations.length > 0 && (
             <span className="text-xs text-white/25 font-mono">{variations.length}/69</span>
           )}
-          {uniswapUrl ? (
-            <a href={uniswapUrl} target="_blank" rel="noopener noreferrer"
+          {tokenAddress ? (
+            <button
+              onClick={() => { setTradeTab("buy"); setTradeOpen(true); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#CBFF4D] text-[#0C0C0C] text-xs font-bold hover:bg-[#CBFF4D]/90 transition-colors">
-              <ArrowUpRight className="w-3 h-3" />
+              <ArrowDownUp className="w-3 h-3" />
               Trade
-            </a>
+            </button>
           ) : tokenStatus === "failed" ? (
             <span className="text-xs text-red-400/50 px-2 py-1 rounded-lg border border-red-500/10">Deploy failed</span>
           ) : tokenStatus === "deploying" ? (
@@ -888,12 +885,13 @@ function ArtTokenGallery({ subdomainName, tokenAddress, tokenStatus, isOwnProfil
                 <div className="text-sm font-bold text-white/80 mb-0.5">{subdomainName} #{(selected.variationIndex ?? 0) + 1}</div>
                 <div className="text-xs text-white/35 font-mono mb-4">{selected.style}</div>
                 <div className="flex gap-2">
-                  {uniswapUrl ? (
-                    <a href={uniswapUrl} target="_blank" rel="noopener noreferrer"
+                  {tokenAddress ? (
+                    <button
+                      onClick={() => { setSelected(null); setTradeTab("buy"); setTradeOpen(true); }}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#CBFF4D] text-[#0C0C0C] text-sm font-bold hover:bg-[#CBFF4D]/90 transition-colors">
-                      <ArrowUpRight className="w-4 h-4" />
-                      Buy on Uniswap
-                    </a>
+                      <ArrowDownUp className="w-4 h-4" />
+                      Buy
+                    </button>
                   ) : (
                     <div className="flex-1 flex items-center justify-center py-2.5 rounded-xl bg-white/5 border border-white/[0.06] text-white/25 text-sm font-mono">
                       Trading coming soon
@@ -909,6 +907,17 @@ function ArtTokenGallery({ subdomainName, tokenAddress, tokenStatus, isOwnProfil
           </motion.div>
         )}
       </AnimatePresence>
+
+      {tokenAddress && (
+        <TradeModal
+          open={tradeOpen}
+          onClose={() => setTradeOpen(false)}
+          tokenAddress={tokenAddress}
+          tokenSymbol={subdomainName.toUpperCase()}
+          subdomainName={subdomainName}
+          defaultTab={tradeTab}
+        />
+      )}
     </div>
   );
 }

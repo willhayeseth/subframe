@@ -15,8 +15,8 @@ const features = [
   },
   {
     icon: Percent,
-    title: "0.5% Creator Fee On Every Trade",
-    desc: "Every trade carries a 1% fee split. Half goes to you as the creator (0.5%) and half to the protocol treasury (0.5%), forever.",
+    title: "Live Uniswap V4 Price Discovery",
+    desc: "Price is determined entirely by real market demand via Uniswap V4 pool mechanics. No oracle, no off-chain pricing — fully on-chain and transparent.",
   },
   {
     icon: Zap,
@@ -53,13 +53,13 @@ const steps = [
   },
   {
     n: "04",
-    t: "Earn from every trade",
-    d: "Every trade triggers the 1% fee split. 0.5% is sent directly to your wallet. No claiming, no staking. It just arrives.",
+    t: "Your token trades on Uniswap",
+    d: "Your ERC-404 token is live on Uniswap V4 from day one. Anyone can buy or sell at the real market price. No intermediary, no permission needed.",
   },
 ];
 
 const stats = [
-  { v: "0.5%", l: "Creator fee on every trade" },
+  { v: "V4", l: "Uniswap hook liquidity" },
   { v: "0%", l: "Gas cost for creators" },
   { v: "ERC-404", l: "Token standard" },
   { v: "L1", l: "Deployed on Ethereum mainnet" },
@@ -82,7 +82,7 @@ export default function ArtProtocol() {
             <span className="text-[#CBFF4D]">tradable art</span>
           </h1>
           <p className="text-xl text-white/50 leading-relaxed max-w-2xl mb-10">
-            Upload any image when you claim your Subframe identity. It is automatically issued as an ERC-404 art token tradeable on Uniswap via a V4 hook. No separate liquidity pool needed, just native Uniswap liquidity from day one. You earn 0.5% from every trade, forever.
+            Upload any image when you claim your Subframe identity. It is automatically issued as an ERC-404 art token tradeable on Uniswap via a V4 hook. No separate liquidity pool needed — just native Uniswap V4 liquidity from day one.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link href="/claim">
@@ -147,7 +147,7 @@ export default function ArtProtocol() {
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { v: "V4 Hook", l: "Uniswap Liquidity" },
-                  { v: "0.5%", l: "Creator Fee" },
+                  { v: "ERC-404", l: "Token Standard" },
                   { v: "0%", l: "Gas Cost" },
                 ].map((s) => (
                   <div key={s.l} className="text-center py-3 rounded-xl bg-white/[0.04] border border-white/[0.07]">
@@ -166,14 +166,14 @@ export default function ArtProtocol() {
               <span className="text-[#CBFF4D]">editions out</span>
             </h2>
             <p className="text-white/45 text-lg leading-relaxed mb-8">
-              The Art Protocol converts any image into an ERC-404 token tradeable on Uniswap via a V4 hook. Price is set by real market demand. No market maker or seed liquidity required. You upload and earn.
+              The Art Protocol converts any image into an ERC-404 token tradeable on Uniswap via a V4 hook. Price is set by real market demand. No market maker or seed liquidity required.
             </p>
             <div className="space-y-3">
               {[
                 "Image pinned to IPFS as token metadata",
                 "ERC-404 token created with your wallet as creator address",
                 "Uniswap V4 pool initialised immediately, tradeable from day one",
-                "0.5% of every trade goes to your wallet instantly",
+                "Max 69 tokens per wallet — anti-manipulation built into the hook",
               ].map((point) => (
                 <div key={point} className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#CBFF4D] shrink-0 mt-2" />
@@ -252,7 +252,7 @@ export default function ArtProtocol() {
             <span className="text-[#CBFF4D]">on-chain income</span>
           </h2>
           <p className="text-white/40 text-lg mb-10">
-            Claim your Subframe identity, upload an image, and start earning from every trade. Zero cost to start.
+            Claim your Subframe identity, upload an image, and launch your own tradable art token on Uniswap V4. Zero cost to start.
           </p>
           <Link href="/claim">
             <button className="inline-flex items-center gap-2 px-10 py-5 btn-lime rounded-full text-lg font-black">

@@ -9,11 +9,11 @@ import {
   CheckSubdomainAvailabilityParams,
   UpdateSubdomainParams,
 } from "@workspace/api-zod";
-import { uploadProfileToIPFS, uploadParentAppToIPFS } from "../lib/ipfs.js";
+import { uploadProfileToIPFS, uploadParentAppToIPFS, uploadArtMetadataFolder } from "../lib/ipfs.js";
 import { registerSubdomainOnChain, fixContenthash, transferSubdomainOwnership, setParentContenthash } from "../lib/ens.js";
 import { claimLimiter } from "../lib/rateLimit.js";
 import { pushRegistryUpdate } from "../lib/github.js";
-import { deployArtToken, buildTokenMeta } from "../lib/token.js";
+import { deployArtToken, buildTokenMeta, buildV4SwapCalldata, buildV4SellCalldata } from "../lib/token.js";
 import { generateArtForSubdomain } from "../lib/art-gen.js";
 
 const RESERVED_NAMES = new Set(["vitalik", "vb", "vb2"]);
@@ -124,16 +124,9 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
           .set({ ipfsCid: cid, status: "active", updatedAt: new Date() })
           .where(eq(subdomainsTable.id, subdomain.id));
 
-        // Auto-generate 69 art variations in background (fire-and-forget)
-        if (avatarUrl) {
-          console.log(`[CLAIM] Triggering art generation for ${cleanName}...`);
-          generateArtForSubdomain(subdomain.id, cleanName, avatarUrl).catch((err) => {
-            console.error(`[CLAIM] Art generation failed for ${cleanName}:`, err);
-          });
-        }
-
-        // Run ENS registration and Art Token deployment in parallel
-        console.log(`[CLAIM] Step 2/3: Starting ENS registration + Art Token deployment in parallel...`);
+        // Step 2/3: run ENS registration AND art generation in parallel.
+        // Art token deploy happens AFTER art gen completes so we have a real baseURI.
+        console.log(`[CLAIM] Step 2/3: Starting ENS registration + art generation in parallel...`);
 
         const { tokenName, tokenSymbol } = buildTokenMeta(cleanName);
 
@@ -142,8 +135,25 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
           .set({ tokenStatus: "deploying", tokenName, tokenSymbol, updatedAt: new Date() })
           .where(eq(subdomainsTable.id, subdomain.id));
 
-        const [ensResult, tokenResult] = await Promise.allSettled([
-          // ENS registration
+        // Art gen pipeline: generate 69 images → upload metadata folder → return ipfs baseURI
+        const artGenPipeline = async (): Promise<string | null> => {
+          if (!avatarUrl) {
+            console.log(`[CLAIM] No avatar for ${cleanName} — token will use placeholder baseURI`);
+            return null;
+          }
+          console.log(`[CLAIM] Art gen: generating 69 variations for ${cleanName}...`);
+          await generateArtForSubdomain(subdomain.id, cleanName, avatarUrl);
+          console.log(`[CLAIM] Art gen complete for ${cleanName}. Uploading metadata folder...`);
+          const baseUri = await uploadArtMetadataFolder(subdomain.id, cleanName, tokenName);
+          if (baseUri) {
+            await db.update(subdomainsTable).set({ artBaseUri: baseUri, updatedAt: new Date() }).where(eq(subdomainsTable.id, subdomain.id));
+            console.log(`[CLAIM] Art metadata folder: ${baseUri}`);
+          }
+          return baseUri;
+        };
+
+        const [ensResult, artBaseUri] = await Promise.allSettled([
+          // ENS: all 4 steps
           registerSubdomainOnChain(cleanName, walletAddress, cid, async (step, txHash) => {
             console.log(`[CLAIM] ENS Step ${step} confirmed: ${txHash}`);
             if (step === 1) {
@@ -157,13 +167,8 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
               afterRegistrationComplete(cleanName).catch(() => void 0);
             }
           }),
-          // Art Token deployment
-          deployArtToken({
-            subdomainName: cleanName,
-            creatorWallet: walletAddress as `0x${string}`,
-            tokenName,
-            tokenSymbol,
-          }),
+          // Art gen pipeline (awaited — token deploy waits for this to finish)
+          artGenPipeline(),
         ]);
 
         if (ensResult.status === "fulfilled" && ensResult.value) {
@@ -174,8 +179,25 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
           console.error(`[CLAIM] ENS SKIPPED: wallet may not control subframe.eth`);
         }
 
-        if (tokenResult.status === "fulfilled") {
-          const { contractAddress, artTokenId, createTxHash, pairAddress, liquidityTxHash } = tokenResult.value;
+        const metadataUri = artBaseUri.status === "fulfilled" && artBaseUri.value
+          ? artBaseUri.value
+          : undefined;
+
+        if (artBaseUri.status === "rejected") {
+          console.error("[CLAIM] Art gen pipeline FAILED:", artBaseUri.reason);
+        }
+
+        // Step 3/3: deploy token AFTER art gen, using the real metadata baseURI
+        console.log(`[CLAIM] Step 3/3: Deploying art token for ${cleanName}... (baseURI: ${metadataUri ?? "placeholder"})`);
+        try {
+          const tokenDeploy = await deployArtToken({
+            subdomainName: cleanName,
+            creatorWallet: walletAddress as `0x${string}`,
+            tokenName,
+            tokenSymbol,
+            metadataUri,
+          });
+          const { contractAddress, artTokenId, createTxHash, pairAddress, liquidityTxHash } = tokenDeploy;
           await db.update(subdomainsTable).set({
             tokenStatus:          "deployed",
             tokenAddress:         contractAddress,
@@ -188,8 +210,8 @@ router.post("/subdomains", claimLimiter, async (req, res) => {
             updatedAt: new Date(),
           }).where(eq(subdomainsTable.id, subdomain.id));
           console.log(`[CLAIM] Art Token created: contract=${contractAddress} poolId=${pairAddress} liquidityTx=${liquidityTxHash}`);
-        } else {
-          console.error("[CLAIM] Art Token deployment FAILED:", tokenResult.reason);
+        } catch (tokenErr) {
+          console.error("[CLAIM] Art Token deployment FAILED:", tokenErr);
           await db.update(subdomainsTable).set({
             tokenStatus: "failed",
             updatedAt: new Date(),
@@ -218,6 +240,10 @@ router.get("/subdomains/stats", async (req, res) => {
       .select({ value: count() })
       .from(subdomainsTable)
       .where(eq(subdomainsTable.status, "linked"));
+    const [artResult] = await db
+      .select({ value: count() })
+      .from(subdomainsTable)
+      .where(eq(subdomainsTable.tokenStatus, "deployed"));
 
     const recentClaims = await db
       .select()
@@ -229,6 +255,7 @@ router.get("/subdomains/stats", async (req, res) => {
       totalSubdomains: Number(totalResult.value),
       activeSubdomains: Number(activeResult.value),
       linkedToIPFS: Number(linkedResult.value),
+      tokenDeployed: Number(artResult.value),
       recentClaims,
     });
   } catch (err) {
@@ -592,6 +619,44 @@ router.post("/admin/set-parent-contenthash", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Failed to set parent contenthash");
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const UNIVERSAL_ROUTER_V2 = "0x66a9893cc07d91d95644aedd05d03f95e1dba8af";
+
+router.get("/subdomains/:name/trade-calldata", async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { type, amountIn } = req.query as { type?: string; amountIn?: string };
+
+    if (!type || !amountIn || !["buy", "sell"].includes(type)) {
+      return void res.status(400).json({ error: "type (buy|sell) and amountIn (wei) required" });
+    }
+
+    const rows = await db.select().from(subdomainsTable).where(eq(subdomainsTable.name, name)).limit(1);
+    if (!rows.length || !rows[0].tokenAddress) {
+      return void res.status(404).json({ error: "Token not deployed" });
+    }
+
+    const tokenAddress = rows[0].tokenAddress as `0x${string}`;
+    const hookAddress = (process.env["HOOK_ADDRESS"] ?? "") as `0x${string}`;
+    const amt = BigInt(amountIn);
+
+    const calldata = type === "buy"
+      ? buildV4SwapCalldata(tokenAddress, hookAddress, amt)
+      : buildV4SellCalldata(tokenAddress, hookAddress, amt);
+
+    return void res.json({
+      type,
+      to: UNIVERSAL_ROUTER_V2,
+      calldata,
+      value: type === "buy" ? amt.toString() : "0",
+      tokenAddress,
+      hookAddress,
+    });
+  } catch (err) {
+    req.log.error({ err }, "trade-calldata error");
+    return void res.status(500).json({ error: "Internal server error" });
   }
 });
 

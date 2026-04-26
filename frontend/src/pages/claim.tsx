@@ -342,8 +342,7 @@ export default function Claim() {
 
               <div className="rounded-xl border border-[#CBFF4D]/20 bg-[#CBFF4D]/[0.04] p-4">
                 <p className="text-xs text-white/55 leading-relaxed mb-3">
-                  Your uploaded image becomes an ERC-404 art token tradeable directly on Uniswap via a V4 hook. No bonding curve, no separate liquidity pool needed. You earn{" "}
-                  <span className="text-[#CBFF4D] font-bold">0.5%</span> from every trade. Subframe takes 0.5%. Each buyer gets a unique art variation.
+                  Your uploaded image becomes an ERC-404 art token tradeable directly on Uniswap via a V4 hook. No bonding curve, no separate liquidity pool needed. Each buyer gets a unique art variation.
                 </p>
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div

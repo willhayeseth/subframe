@@ -61,6 +61,7 @@ export const GetSubdomainStatsResponse = zod.object({
   totalSubdomains: zod.number(),
   activeSubdomains: zod.number(),
   linkedToIPFS: zod.number(),
+  tokenDeployed: zod.number(),
   recentClaims: zod.array(
     zod.object({
       id: zod.number(),
