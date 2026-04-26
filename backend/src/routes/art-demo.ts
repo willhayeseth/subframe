@@ -184,7 +184,7 @@ router.post("/art-demo/generate", artDemoLimiter, async (req, res) => {
     const pfpPath = findPfpPath();
     const characterDescription = await analyzeImage(pfpPath);
 
-    if (cancelled) { cleanup(); return res.end(); }
+    if (cancelled) { cleanup(); res.end(); return; }
 
     send({ type: "analyzed", description: characterDescription });
 

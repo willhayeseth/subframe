@@ -32,6 +32,7 @@ jobs:
           pnpm exec tsc --build lib/db
           pnpm exec tsc --build lib/api-zod
           pnpm exec tsc --build lib/api-client-react
+          pnpm exec tsc --build lib/integrations-openai-ai-server
 
       - name: Type check all packages
         run: pnpm -r --if-present run typecheck
