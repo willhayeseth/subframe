@@ -112,8 +112,8 @@ export function TradeModal({
     ? (Number((tokenBalance as bigint) / 10n ** 18n) + Number(((tokenBalance as bigint) % 10n ** 18n) * 10000n / 10n ** 18n) / 10000).toFixed(4)
     : isConnected ? "..." : "0";
 
-  const permit2Amount = permit2Data ? (permit2Data as [bigint, bigint, bigint])[0] : 0n;
-  const permit2Expiry = permit2Data ? (permit2Data as [bigint, bigint, bigint])[1] : 0n;
+  const permit2Amount = permit2Data ? (permit2Data as unknown as [bigint, bigint, bigint])[0] : 0n;
+  const permit2Expiry = permit2Data ? (permit2Data as unknown as [bigint, bigint, bigint])[1] : 0n;
   const nowTs = BigInt(Math.floor(Date.now() / 1000));
 
   const needsErc20Approve = tab === "sell" && amountWei !== null && (erc20Allowance as bigint | undefined) !== undefined && (erc20Allowance as bigint) < amountWei;
