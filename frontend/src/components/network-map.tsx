@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Move } from "lucide-react";
 import type { Subdomain } from "@workspace/api-client-react";
+import { ipfsImg } from "@/lib/ipfs-url";
 
 const CANVAS_W = 900;
 const CANVAS_H = 700;
@@ -169,7 +170,7 @@ export function SubframeNetworkMap({ subdomains, currentName = "", onNodeClick }
                 transition={{ delay: idx * 0.03, type: "spring", damping: 15 }}
               >
                 {s.avatarUrl ? (
-                  <img src={s.avatarUrl} alt={s.name} className="w-full h-full object-cover" />
+                  <img src={ipfsImg(s.avatarUrl)} alt={s.name} className="w-full h-full object-cover" />
                 ) : (
                   <>
                     <span className={`font-black tracking-wider leading-none transition-colors

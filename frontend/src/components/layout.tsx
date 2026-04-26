@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowUpRight, X, LogOut, User, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ipfsImg } from "@/lib/ipfs-url";
 import { useAccount, useDisconnect } from "wagmi";
 import { useListSubdomains } from "@workspace/api-client-react";
 
@@ -198,7 +199,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href={`/profile/${userSubdomain.name}`}>
                   <button className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#CBFF4D]/30 text-[#CBFF4D] text-sm font-bold hover:bg-[#CBFF4D]/8 transition-all">
                     {userSubdomain.avatarUrl ? (
-                      <img src={userSubdomain.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                      <img src={ipfsImg(userSubdomain.avatarUrl)} alt="" className="w-5 h-5 rounded-full object-cover" />
                     ) : (
                       <User className="w-4 h-4" />
                     )}
@@ -234,7 +235,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link href={`/profile/${userSubdomain.name}`} className="md:hidden">
                 <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#CBFF4D]/30 text-[#CBFF4D] text-sm font-bold">
                   {userSubdomain.avatarUrl ? (
-                    <img src={userSubdomain.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                    <img src={ipfsImg(userSubdomain.avatarUrl)} alt="" className="w-5 h-5 rounded-full object-cover" />
                   ) : (
                     <User className="w-4 h-4" />
                   )}

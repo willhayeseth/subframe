@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { ipfsImg } from "@/lib/ipfs-url";
 import { useParams, Link, useLocation } from "wouter";
 import { useAccount, useEnsName, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseEther, formatEther } from "viem";
@@ -624,14 +625,6 @@ interface ArtVariationItem {
   imageUrl: string | null;
 }
 
-/** Rewrite slow Pinata public gateway → ipfs.io (4x faster). Falls back to original on error. */
-function ipfsImg(url: string | null | undefined): string {
-  if (!url) return "";
-  const cid = url.split("/ipfs/")[1];
-  if (!cid) return url;
-  return `https://ipfs.io/ipfs/${cid}`;
-}
-
 function ArtTokenGallery({ subdomainName, tokenAddress, isOwnProfile }: { subdomainName: string; tokenAddress?: string | null; isOwnProfile: boolean }) {
   const [variations, setVariations] = useState<ArtVariationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1078,7 +1071,7 @@ export default function Profile() {
                     <div className="absolute inset-0 rounded-xl bg-[#CBFF4D]/10 blur-lg" />
                     <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#111] border border-[#CBFF4D]/20 overflow-hidden shadow-[0_0_20px_rgba(203,255,77,0.12)]">
                       {subdomain.avatarUrl ? (
-                        <img src={subdomain.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={ipfsImg(subdomain.avatarUrl)} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-[#CBFF4D] fill-[#CBFF4D]" />
@@ -1613,7 +1606,7 @@ function StandaloneProfileLayout({
             <div className="absolute inset-0 rounded-xl bg-[#CBFF4D]/10 blur-lg" />
             <div className="relative w-16 h-16 rounded-xl bg-[#111] border border-[#CBFF4D]/20 overflow-hidden shadow-[0_0_20px_rgba(203,255,77,0.12)]">
               {subdomain.avatarUrl ? (
-                <img src={subdomain.avatarUrl} alt="" className="w-full h-full object-cover" />
+                <img src={ipfsImg(subdomain.avatarUrl)} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Zap className="w-7 h-7 text-[#CBFF4D] fill-[#CBFF4D]" />

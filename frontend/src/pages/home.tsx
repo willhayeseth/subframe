@@ -8,6 +8,7 @@ import type { Subdomain } from "@workspace/api-client-react";
 import ctaAsset from "/subframe-cta-asset.webp";
 import identityCard from "/subframe-hero-card.webp";
 import { EnsVideoAnim, AiWalletVideoAnim, AiChatVideoAnim } from "@/components/feature-animations";
+import { ipfsImg } from "@/lib/ipfs-url";
 
 function Marquee({ items, reverse = false }: { items: string[]; reverse?: boolean }) {
   const doubled = [...items, ...items, ...items];
@@ -116,7 +117,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
             <div className="relative shrink-0">
               <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/8 overflow-hidden flex items-center justify-center">
                 {subdomain.avatarUrl ? (
-                  <img src={subdomain.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={ipfsImg(subdomain.avatarUrl)} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = subdomain.avatarUrl!; }} />
                 ) : (
                   <span className="text-sm font-black text-white/50">
                     {subdomain.name.slice(0, 2).toUpperCase()}

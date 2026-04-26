@@ -4,6 +4,7 @@ import { Search, ExternalLink, Layers, Globe } from "lucide-react";
 import { useListSubdomains } from "@workspace/api-client-react";
 import type { Subdomain } from "@workspace/api-client-react";
 import { SubframeNetworkMap } from "../components/network-map";
+import { ipfsImg } from "@/lib/ipfs-url";
 
 function StatusBadge({ status }: { status: string }) {
   const c: Record<string, string> = {
@@ -187,7 +188,7 @@ export default function Explore() {
                 <div className="w-9 h-9 rounded-xl bg-[#CBFF4D]/10 border border-[#CBFF4D]/20 flex items-center justify-center text-xs font-black text-[#CBFF4D] shrink-0 overflow-hidden">
                   {s.avatarUrl ? (
                     <img
-                      src={s.avatarUrl}
+                      src={ipfsImg(s.avatarUrl)}
                       alt={s.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
