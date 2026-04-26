@@ -1,0 +1,104 @@
+{
+  "updated": "2026-04-26T17:57:52.149Z",
+  "count": 14,
+  "members": [
+    {
+      "name": "my",
+      "ensFullName": "my.subframe.eth",
+      "walletAddress": "0xa3838D434410b5C7186eea6F1A7296614BddaDC7",
+      "ipfsCid": "bafybeiephl7ut3ou2oulmfn7wkpsu6gf7nm3onwz2jqy54pysgv64pgqye",
+      "linkedAt": "2026-04-26T15:33:29.404Z"
+    },
+    {
+      "name": "smith",
+      "ensFullName": "smith.subframe.eth",
+      "walletAddress": "0xE435cF22008aF03E23A8cAB68798a819fb9511A2",
+      "ipfsCid": "bafybeiat4q26epf24gi3vf7qrxowxelngpnjsyhh64p6noeftnnvjycxjq",
+      "linkedAt": "2026-04-26T15:28:00.988Z"
+    },
+    {
+      "name": "rachel",
+      "ensFullName": "rachel.subframe.eth",
+      "walletAddress": "0xff5801Becc708293B73515E016d568956C653BF7",
+      "ipfsCid": "bafybeiduvdauugzh2e5gwddnplvcgpdku3r6vcdodc33tcvrwe34huedp4",
+      "linkedAt": "2026-04-26T15:24:50.193Z"
+    },
+    {
+      "name": "unicorn",
+      "ensFullName": "unicorn.subframe.eth",
+      "walletAddress": "0xFF570f74aE3db2920CC87Bf825B99eE3439c7f38",
+      "ipfsCid": "bafybeifztrao26u45nedb56rgkpahxhkqephkvt3qsikwqsuljljh2yhuy",
+      "linkedAt": "2026-04-26T16:01:50.702Z"
+    },
+    {
+      "name": "one",
+      "ensFullName": "one.subframe.eth",
+      "walletAddress": "0x7eCD22Ebc329dcb92caE326B65622dE0e58fD10d",
+      "ipfsCid": "bafybeicf3547gm2qnlmdyjhtftg7eafx433g57s6vh5g2ztctdk5k5siya",
+      "linkedAt": "2026-04-26T15:52:15.885Z"
+    },
+    {
+      "name": "alien",
+      "ensFullName": "alien.subframe.eth",
+      "walletAddress": "0xA2D0337159c18948B9a78Fe9D6e6BA27D7e9cc9A",
+      "ipfsCid": "bafybeihms2dh5uc6nilzt2nsmx5ju6s6haobf5t25caftsghz4rvg3pvp4",
+      "linkedAt": "2026-04-26T15:43:40.318Z"
+    },
+    {
+      "name": "moon",
+      "ensFullName": "moon.subframe.eth",
+      "walletAddress": "0x9ceb58282078B9150C4a18b712774058Be439bbC",
+      "ipfsCid": "bafybeiasjlr322gvdv5gt2z4a4msuj5clo76yh7c4dnjcwssjll3yyywjy",
+      "linkedAt": "2026-04-26T15:35:50.899Z"
+    },
+    {
+      "name": "gonner",
+      "ensFullName": "gonner.subframe.eth",
+      "walletAddress": "0xcfEb0b0E41494A4A839C145f3908A4EC7E7D9749",
+      "ipfsCid": "bafybeicpz4wgmt4ok55qtptwg3q7f2hobn3l5m3jtq3onxxgssobh6ycey",
+      "linkedAt": "2026-04-26T15:30:41.313Z"
+    },
+    {
+      "name": "will",
+      "ensFullName": "will.subframe.eth",
+      "walletAddress": "0xA0E7ff9e484a89F52F39A5953A3c911A0c10d4d5",
+      "ipfsCid": "bafybeiec52j2o2b7rihnzsmaxqjjdcphudpoihmy6qppv3itpwvlqtcqcq",
+      "linkedAt": "2026-04-26T15:12:32.014Z"
+    },
+    {
+      "name": "og",
+      "ensFullName": "og.subframe.eth",
+      "walletAddress": "0x8d2Cf655B3267eBA7b135DF773d8e93a07369533",
+      "ipfsCid": "bafybeiffh4ulsgerehq6fpdydbr4pf2dpqjbdcbltwflfk7vgagcyy6gzm",
+      "linkedAt": "2026-04-26T15:38:28.648Z"
+    },
+    {
+      "name": "huang",
+      "ensFullName": "huang.subframe.eth",
+      "walletAddress": "0xB6b9B4dD0d472BDCD6010feA25a85331b24658BC",
+      "ipfsCid": "bafybeigft46onfudlc3jzg7ls23ls5allgx6jfhpsxrpcjirmh7sqqedyy",
+      "linkedAt": "2026-04-26T15:41:03.007Z"
+    },
+    {
+      "name": "weirdo",
+      "ensFullName": "weirdo.subframe.eth",
+      "walletAddress": "0x029Edbb9ed44022Db85427B4ff1420Af074CB6dC",
+      "ipfsCid": "bafybeig3gqf33naozi2tv7rh2vzoy64slq7nt2pywc2mjg4a35qultvpwu",
+      "linkedAt": "2026-04-26T15:46:14.705Z"
+    },
+    {
+      "name": "test1",
+      "ensFullName": "test1.subframe.eth",
+      "walletAddress": "0xA8944aeA1D6c684Cf0DaB38C636a61ED325De6Ca",
+      "ipfsCid": "bafybeiclka76naurk3pq5lsp7m65sx5gxbn7njme42tv6xkjicvtwl7id4",
+      "linkedAt": "2026-04-26T15:54:49.078Z"
+    },
+    {
+      "name": "hello",
+      "ensFullName": "hello.subframe.eth",
+      "walletAddress": "0x3ce219281c63a1Ffe0E8B54f84E0A495656660F8",
+      "ipfsCid": "bafybeif4rmkhjarwx3ozpr5jxwsmdfa7v6g2eoimrnzodauxmqvhuvz6qm",
+      "linkedAt": "2026-04-26T17:57:51.985Z"
+    }
+  ]
+}
