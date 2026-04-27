@@ -2,9 +2,6 @@
 
 Claim your ENS subdomain on `subframe.eth` with one transaction and zero gas for registration. Built on Ethereum Name Service, IPFS, and AI-powered wallet analysis.
 
-[![CI](https://github.com/willhayeseth/subframe/actions/workflows/ci.yml/badge.svg)](https://github.com/willhayeseth/subframe/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-cbff4d.svg)](./LICENSE)
-
 ## What It Does
 
 Subframe Protocol gives every Ethereum wallet a permanent, decentralized identity at `name.subframe.eth`. The entire registration process runs on-chain with the backend covering all gas costs. The user signs exactly one transaction to set their primary ENS name.
