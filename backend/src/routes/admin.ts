@@ -248,27 +248,30 @@ adminRouter.post("/admin/import-subdomain", async (req, res) => {
     return;
   }
   try {
+    const str = (v: unknown) => (typeof v === "string" && v ? v : null);
+    const validTokenStatus = ["none","deploying","deployed","failed"] as const;
+    const validStatus = ["pending","active","linked"] as const;
     await db.insert(subdomainsTable).values({
       name: d.name as string,
       walletAddress: d.walletAddress as string,
-      ensFullName: d.ensFullName as string ?? null,
-      ipfsCid: d.ipfsCid as string ?? null,
-      avatarUrl: d.avatarUrl as string ?? null,
-      bio: d.bio as string ?? null,
-      status: (d.status as "pending" | "linked" | "failed") ?? "linked",
-      ensTx1Hash: d.ensTx1Hash as string ?? null,
-      ensTx2Hash: d.ensTx2Hash as string ?? null,
-      ensTx3Hash: d.ensTx3Hash as string ?? null,
-      ensTx4Hash: d.ensTx4Hash as string ?? null,
-      tokenStatus: (d.tokenStatus as string) ?? null,
-      tokenAddress: d.tokenAddress as string ?? null,
-      tokenSymbol: d.tokenSymbol as string ?? null,
-      tokenName: d.tokenName as string ?? null,
-      tokenDeployTxHash: d.tokenDeployTxHash as string ?? null,
-      uniswapPairAddress: d.uniswapPairAddress as string ?? null,
-      uniswapLiquidityTxHash: d.uniswapLiquidityTxHash as string ?? null,
-      artTokenId: d.artTokenId as string ?? null,
-      artBaseUri: d.artBaseUri as string ?? null,
+      ensFullName: str(d.ensFullName),
+      ipfsCid: str(d.ipfsCid),
+      avatarUrl: str(d.avatarUrl),
+      bio: str(d.bio),
+      status: validStatus.includes(d.status as never) ? d.status as "pending"|"active"|"linked" : "linked",
+      ensTx1Hash: str(d.ensTx1Hash),
+      ensTx2Hash: str(d.ensTx2Hash),
+      ensTx3Hash: str(d.ensTx3Hash),
+      ensTx4Hash: str(d.ensTx4Hash),
+      tokenStatus: validTokenStatus.includes(d.tokenStatus as never) ? d.tokenStatus as "none"|"deploying"|"deployed"|"failed" : "none",
+      tokenAddress: str(d.tokenAddress),
+      tokenSymbol: str(d.tokenSymbol),
+      tokenName: str(d.tokenName),
+      tokenDeployTxHash: str(d.tokenDeployTxHash),
+      uniswapPairAddress: str(d.uniswapPairAddress),
+      uniswapLiquidityTxHash: str(d.uniswapLiquidityTxHash),
+      artTokenId: str(d.artTokenId),
+      artBaseUri: str(d.artBaseUri),
     }).onConflictDoNothing();
     res.json({ ok: true, name: d.name });
   } catch (err) {
