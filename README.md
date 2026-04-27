@@ -22,7 +22,7 @@ Browser (subframe.eth.limo)
   |
   +-- React + Vite SPA (IPFS + ENS contenthash)
         |
-        +-- /api  Express API Server (Replit)
+        +-- /api  Express API Server
               |
               +-- ENS Registration    (viem, ethers, subframe.eth backend wallet)
               +-- IPFS Upload         (Pinata)
@@ -140,9 +140,9 @@ This script:
 
 The app becomes accessible at `subframe.eth.limo` within a few minutes of ENS propagation.
 
-### Backend (Replit)
+### Backend
 
-The API server runs on Replit and is always-on. Redeploy by pushing to the Replit workspace directly.
+The API server is always-on. Redeploy via the server environment directly.
 
 ## Contributing
 
@@ -171,7 +171,6 @@ Scopes: `frontend`, `backend`, `packages`, `scripts`, `registry`, `ci`
 
 - TypeScript strict mode enabled across all packages
 - No `any` without explicit justification
-- No em dash or double hyphen in UI copy or AI responses
 
 ## Registry
 
