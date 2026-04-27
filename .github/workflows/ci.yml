@@ -70,7 +70,7 @@ jobs:
           NODE_ENV: production
           PORT: "3001"
           BASE_PATH: /
-          VITE_API_BASE_URL: https://subframe.network
+          VITE_API_BASE_URL: https://subframedev.replit.app
 
   deploy-pages:
     name: Deploy to GitHub Pages
@@ -116,7 +116,7 @@ jobs:
           NODE_ENV: production
           PORT: "3001"
           BASE_PATH: /
-          VITE_API_BASE_URL: https://subframe.network
+          VITE_API_BASE_URL: https://subframedev.replit.app
 
       - name: Create 404.html for SPA routing
         run: cp frontend/dist/public/index.html frontend/dist/public/404.html
@@ -170,7 +170,7 @@ jobs:
           NODE_ENV: production
           PORT: "3001"
           BASE_PATH: /
-          VITE_API_BASE_URL: https://subframe.network
+          VITE_API_BASE_URL: https://subframedev.replit.app
 
       - name: Pin to IPFS & update ENS contenthash
         run: node frontend/scripts/pin-to-ipfs.mjs
