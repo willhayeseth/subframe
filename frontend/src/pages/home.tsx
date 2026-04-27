@@ -111,7 +111,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
   const hasToken = subdomain.tokenStatus === "deployed" && subdomain.tokenSymbol;
   return (
     <ScrollCard index={i}>
-      <Link href={`/profile/${subdomain.name}`}>
+      <a href={`https://subframe.eth.limo/${subdomain.name}`} target="_blank" rel="noopener noreferrer">
         <div className="group p-5 rounded-2xl card-dark card-dark-hover cursor-pointer transition-all duration-300">
           <div className="flex items-start gap-3 mb-4">
             <div className="relative shrink-0">
@@ -159,7 +159,7 @@ function SubdomainCard({ subdomain, i }: { subdomain: Subdomain; i: number }) {
             </span>
           </div>
         </div>
-      </Link>
+      </a>
     </ScrollCard>
   );
 }
