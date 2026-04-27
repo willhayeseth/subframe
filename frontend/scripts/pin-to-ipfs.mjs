@@ -48,6 +48,7 @@ for (const { full, rel } of files) {
 }
 // _redirects is already in public/ (/* /index.html 200) — no need to add manually.
 form.append("name", `subframe-frontend-${Date.now()}`);
+form.append("network", "public"); // public IPFS — required for eth.limo & public gateways
 
 let cid;
 for (let attempt = 1; attempt <= 3; attempt++) {
