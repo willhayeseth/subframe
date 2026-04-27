@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql as drizzleSql } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import { uploadProfileToIPFS, uploadParentAppToIPFS, uploadArtMetadataFolder } from "../lib/ipfs";
 import { setParentContenthash, fixContenthash, registerSubdomainOnChain, setNameForWallet, setContenthashForWallet } from "../lib/ens";
@@ -248,31 +248,31 @@ adminRouter.post("/admin/import-subdomain", async (req, res) => {
     return;
   }
   try {
-    const str = (v: unknown) => (typeof v === "string" && v ? v : null);
-    const validTokenStatus = ["none","deploying","deployed","failed"] as const;
-    const validStatus = ["pending","active","linked"] as const;
-    await db.insert(subdomainsTable).values({
-      name: d.name as string,
-      walletAddress: d.walletAddress as string,
-      ensFullName: str(d.ensFullName),
-      ipfsCid: str(d.ipfsCid),
-      avatarUrl: str(d.avatarUrl),
-      bio: str(d.bio),
-      status: validStatus.includes(d.status as never) ? d.status as "pending"|"active"|"linked" : "linked",
-      ensTx1Hash: str(d.ensTx1Hash),
-      ensTx2Hash: str(d.ensTx2Hash),
-      ensTx3Hash: str(d.ensTx3Hash),
-      ensTx4Hash: str(d.ensTx4Hash),
-      tokenStatus: validTokenStatus.includes(d.tokenStatus as never) ? d.tokenStatus as "none"|"deploying"|"deployed"|"failed" : "none",
-      tokenAddress: str(d.tokenAddress),
-      tokenSymbol: str(d.tokenSymbol),
-      tokenName: str(d.tokenName),
-      tokenDeployTxHash: str(d.tokenDeployTxHash),
-      uniswapPairAddress: str(d.uniswapPairAddress),
-      uniswapLiquidityTxHash: str(d.uniswapLiquidityTxHash),
-      artTokenId: str(d.artTokenId),
-      artBaseUri: str(d.artBaseUri),
-    }).onConflictDoNothing();
+    const s = (v: unknown) => (typeof v === "string" && v ? v : null);
+    const validTokenStatus = ["none","deploying","deployed","failed"];
+    const validStatus = ["pending","active","linked"];
+    const ensFullName = (d.ensFullName as string) || `${d.name}.subframe.eth`;
+    const status = validStatus.includes(d.status as string) ? d.status as string : "linked";
+    const tokenStatus = validTokenStatus.includes(d.tokenStatus as string) ? d.tokenStatus as string : "none";
+    // Use raw SQL to avoid Drizzle strict-null type issues with nullable columns
+    await db.execute(drizzleSql`
+      INSERT INTO subdomains (
+        name, wallet_address, ens_full_name, ipfs_cid, avatar_url, bio,
+        status, ens_tx1_hash, ens_tx2_hash, ens_tx3_hash, ens_tx4_hash,
+        token_status, token_address, token_symbol, token_name,
+        token_deploy_tx_hash, uniswap_pair_address, uniswap_liquidity_tx_hash,
+        art_token_id, art_base_uri
+      ) VALUES (
+        ${d.name as string}, ${d.walletAddress as string}, ${ensFullName},
+        ${s(d.ipfsCid)}, ${s(d.avatarUrl)}, ${s(d.bio)},
+        ${status}::subdomain_status,
+        ${s(d.ensTx1Hash)}, ${s(d.ensTx2Hash)}, ${s(d.ensTx3Hash)}, ${s(d.ensTx4Hash)},
+        ${tokenStatus}::token_status,
+        ${s(d.tokenAddress)}, ${s(d.tokenSymbol)}, ${s(d.tokenName)},
+        ${s(d.tokenDeployTxHash)}, ${s(d.uniswapPairAddress)}, ${s(d.uniswapLiquidityTxHash)},
+        ${s(d.artTokenId)}, ${s(d.artBaseUri)}
+      ) ON CONFLICT DO NOTHING
+    `);
     res.json({ ok: true, name: d.name });
   } catch (err) {
     logger.error({ err }, "[ADMIN] import-subdomain failed");
