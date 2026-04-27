@@ -176,7 +176,8 @@ jobs:
         run: node artifacts/subframe/scripts/pin-to-ipfs.mjs
         env:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
-          ENS_PRIVATE_KEY: ${{ secrets.ENS_PRIVATE_KEY }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          API_URL: https://subframe.network
 
   build-backend:
     name: Build Backend
