@@ -1,5 +1,5 @@
 name: CI
 on:
   workflow_dispatch:
-# Deployment handled directly via Replit at subframe.network
+# Deployment handled directly at subframe.network
 jobs: {}
