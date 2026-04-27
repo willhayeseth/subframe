@@ -44,7 +44,7 @@ for (const { full, rel } of files) {
 // SPA fallback: eth.limo / IPFS gateways honour _redirects to serve index.html for any path
 form.append("file", new Blob(["/* /index.html 200\n"], { type: "text/plain" }), "_redirects");
 form.append("pinataMetadata", JSON.stringify({ name: `subframe-frontend-${Date.now()}` }));
-form.append("pinataOptions", JSON.stringify({ cidVersion: 1, wrapWithDirectory: true }));
+form.append("pinataOptions", JSON.stringify({ cidVersion: 1, wrapWithDirectory: false }));
 
 let cid;
 for (let attempt = 1; attempt <= 3; attempt++) {
