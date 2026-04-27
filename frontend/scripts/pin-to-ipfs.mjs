@@ -33,29 +33,32 @@ function walk(dir, base = dir) {
 
 // ── Pin to IPFS ───────────────────────────────────────────────────────────────
 
-const files = walk(DIST);
+// Files that are only needed for GitHub Pages, not IPFS
+const SKIP_FILES = new Set(["CNAME", "404.html"]);
+
+const files = walk(DIST).filter(({ rel }) => !SKIP_FILES.has(rel));
 console.log(`[IPFS] Pinning ${files.length} files to Pinata...`);
 
+// Pinata v3 Files API — supports flat directory uploads (files at root, no prefix required).
+// v2 pinFileToIPFS rejects multiple root-level files without a common folder prefix.
 const form = new FormData();
 for (const { full, rel } of files) {
   const buf = fs.readFileSync(full);
   form.append("file", new Blob([buf]), rel);
 }
-// SPA fallback: eth.limo / IPFS gateways honour _redirects to serve index.html for any path
-form.append("file", new Blob(["/* /index.html 200\n"], { type: "text/plain" }), "_redirects");
-form.append("pinataMetadata", JSON.stringify({ name: `subframe-frontend-${Date.now()}` }));
-form.append("pinataOptions", JSON.stringify({ cidVersion: 1, wrapWithDirectory: false }));
+// _redirects is already in public/ (/* /index.html 200) — no need to add manually.
+form.append("name", `subframe-frontend-${Date.now()}`);
 
 let cid;
 for (let attempt = 1; attempt <= 3; attempt++) {
   try {
-    const pinRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+    const pinRes = await fetch("https://uploads.pinata.cloud/v3/files", {
       method: "POST",
       headers: { Authorization: `Bearer ${JWT}` },
       body: form,
     });
     const data = await pinRes.json();
-    if (data.IpfsHash) { cid = data.IpfsHash; break; }
+    if (data?.data?.cid) { cid = data.data.cid; break; }
     console.error(`[IPFS] Attempt ${attempt} failed:`, JSON.stringify(data).slice(0, 200));
   } catch (err) {
     console.error(`[IPFS] Attempt ${attempt} error:`, err.message);
