@@ -2,29 +2,40 @@
 
 Claim your ENS subdomain on `subframe.eth` with one transaction and zero gas for registration. Built on Ethereum Name Service, IPFS, and AI-powered wallet analysis.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-cbff4d.svg)](./LICENSE)
+[![X](https://img.shields.io/badge/X-%40subframeeth-black)](https://x.com/subframeeth)
+
+**[Website](https://subframe.network)** | **[Docs](https://subframe.network/docs)** | **[Explore](https://subframe.network/explore)**
+
+---
+
 ## What It Does
 
-Subframe Protocol gives every Ethereum wallet a permanent, decentralized identity at `name.subframe.eth`. The entire registration process runs on-chain with the backend covering all gas costs. The user signs exactly one transaction to set their primary ENS name.
+Subframe Protocol gives every Ethereum wallet a permanent, decentralized identity at `name.subframe.eth`. Registration runs entirely on-chain with the backend covering all gas costs. The user signs exactly one transaction to activate their primary ENS name.
 
-- **Zero gas for users** during registration. The backend wallet handles subdomain creation, resolver setup, address linking, and IPFS contenthash.
+- **Zero gas for users** during registration. The backend wallet handles subdomain creation, resolver setup, address record, and IPFS contenthash.
 - **One user-signed transaction** (`setName`) to activate the ENS primary name so the address resolves on Etherscan and across the ecosystem.
-- **Decentralized profile** hosted on IPFS and served through ENS contenthash at `name.subframe.eth.limo`.
+- **Decentralized profile** hosted on IPFS, served through ENS contenthash at `name.subframe.eth.limo` and also at `subframe.network/name`.
 - **AI wallet analysis** powered by OpenAI, summarizing on-chain activity, risk level, and behavioral tags.
+- **Art Protocol** for generating and trading a limited 69-piece ERC-404 art collection per wallet, tradeable on Uniswap V4.
 - **Live registry** committed to this repo automatically on every successful registration.
+
+---
 
 ## Architecture
 
 ```
-Browser (subframe.eth.limo)
+Browser (subframe.network / subframe.eth.limo)
   |
   +-- React + Vite SPA (IPFS + ENS contenthash)
         |
         +-- /api  Express API Server
               |
-              +-- ENS Registration    (viem, ethers, subframe.eth backend wallet)
+              +-- ENS Registration    (viem, subframe.eth backend wallet)
               +-- IPFS Upload         (Pinata)
               +-- Wallet Data         (Etherscan API)
               +-- AI Analysis         (OpenAI GPT-4o)
+              +-- Art Protocol        (ERC-404 + Uniswap V4 hook)
               +-- Registry Sync       (GitHub App API)
               +-- Database            (PostgreSQL + Drizzle ORM)
 ```
@@ -46,11 +57,24 @@ POST /api/subdomains   (backend processes all 4 on-chain steps)
 User signs one TX: setName(name.subframe.eth)
         |
         v
-Primary ENS name active. Profile live at name.subframe.eth.limo
+Primary ENS name active
+Profile live at name.subframe.eth.limo and subframe.network/name
         |
         v
 registry.json committed to GitHub automatically
 ```
+
+---
+
+## Art Protocol
+
+Each registered wallet can generate a collection of 69 unique AI-generated artworks stored as ERC-404 tokens. ERC-404 combines ERC-20 and ERC-721 in a single contract, making each piece both a tradeable fungible token and a unique NFT. Trading is powered by a custom Uniswap V4 hook deployed on mainnet.
+
+- 69 pieces per wallet, generated on-chain
+- Buy and sell directly from any profile page
+- No current platform fee; a creator fee on trades is planned
+
+---
 
 ## Project Structure
 
@@ -58,12 +82,13 @@ registry.json committed to GitHub automatically
 subframe/
   frontend/              React + Vite web app
     src/
-      pages/             home, claim, onboarding, profile, explore, analyze, ai-chat
+      pages/             home, claim, onboarding, profile, explore, analyze,
+                         ai-chat, art-protocol, art-trading, docs
       components/        layout, UI primitives (shadcn/ui), 3D scene
       lib/               wagmi/reown web3 config, utils
   backend/               Express API server
     src/
-      routes/            subdomains, wallets, openai, upload, health
+      routes/            subdomains, wallets, openai, upload, health, admin
       lib/               ens, ipfs, github, rateLimit, logger
   packages/
     api-spec/            OpenAPI 3.0 specification (source of truth)
@@ -71,9 +96,11 @@ subframe/
     api-zod/             Generated Zod validators (from api-spec via Orval)
     db/                  Drizzle ORM schema (subdomains, conversations, messages)
   scripts/               IPFS deploy and ENS contenthash automation
-  .github/workflows/     CI pipeline (typecheck + build)
+  .github/workflows/     CI config
   registry.json          Live registry of all linked subframe.eth subdomains
 ```
+
+---
 
 ## Getting Started
 
@@ -89,8 +116,13 @@ Create a `.env` file in the `backend/` directory:
 
 ```env
 ETH_RPC_URL=https://mainnet.infura.io/v3/your-key
+ENS_PRIVATE_KEY=your-backend-wallet-private-key
 ETHERSCAN_API_KEY=your-etherscan-api-key
 OPENAI_API_KEY=your-openai-api-key
+PINATA_JWT=your-pinata-jwt
+DATABASE_URL=your-postgres-connection-string
+SESSION_SECRET=random-secret-string
+ADMIN_SECRET=admin-api-secret
 VITE_REOWN_PROJECT_ID=your-reown-project-id
 ```
 
@@ -100,10 +132,10 @@ VITE_REOWN_PROJECT_ID=your-reown-project-id
 # Install all workspace dependencies
 pnpm install
 
-# Start backend API server (port 8080 by default)
+# Start backend API server
 pnpm dev:backend
 
-# Start frontend dev server (port 5173 by default)
+# Start frontend dev server
 pnpm dev:frontend
 ```
 
@@ -122,6 +154,8 @@ pnpm --filter @workspace/api-spec run generate
 pnpm --filter @workspace/db run db:push
 ```
 
+---
+
 ## Deployment
 
 ### Frontend (IPFS + ENS)
@@ -135,11 +169,13 @@ This script:
 2. Uploads the build output to Pinata (IPFS)
 3. Sets the contenthash on `subframe.eth` via ENS public resolver
 
-The app becomes accessible at `subframe.eth.limo` within a few minutes of ENS propagation.
+The app is accessible at `subframe.eth.limo` within a few minutes of ENS propagation, and always at `subframe.network`.
 
 ### Backend
 
-The API server is always-on. Redeploy via the server environment directly.
+The API server runs as an always-on service at `subframe.network/api`.
+
+---
 
 ## Contributing
 
@@ -147,7 +183,7 @@ Contributions are welcome. Please follow these steps:
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feat/your-feature`
-3. Make your changes and ensure CI passes locally: `pnpm -r run typecheck`
+3. Make your changes and ensure types pass: `pnpm -r run typecheck`
 4. Open a pull request against `main` with a clear description
 
 ### Commit Convention
@@ -169,9 +205,23 @@ Scopes: `frontend`, `backend`, `packages`, `scripts`, `registry`, `ci`
 - TypeScript strict mode enabled across all packages
 - No `any` without explicit justification
 
+---
+
 ## Registry
 
 Every successfully registered subdomain is recorded in [`registry.json`](./registry.json) via an automated commit from the backend. The file is the canonical public list of all `subframe.eth` subdomains.
+
+---
+
+## Links
+
+- Website: [subframe.network](https://subframe.network)
+- Docs: [subframe.network/docs](https://subframe.network/docs)
+- Explore: [subframe.network/explore](https://subframe.network/explore)
+- X: [@subframeeth](https://x.com/subframeeth)
+- GitHub: [willhayeseth/subframe](https://github.com/willhayeseth/subframe)
+
+---
 
 ## License
 
