@@ -239,6 +239,44 @@ adminRouter.post("/admin/deploy-parent", async (req, res) => {
   }
 });
 
+// POST /admin/import-subdomain — copy a subdomain record from dev DB into prod DB
+adminRouter.post("/admin/import-subdomain", async (req, res) => {
+  if (!checkAuth(req, res)) return;
+  const d = req.body as Record<string, unknown>;
+  if (!d.name || !d.walletAddress) {
+    res.status(400).json({ error: "name and walletAddress required" });
+    return;
+  }
+  try {
+    await db.insert(subdomainsTable).values({
+      name: d.name as string,
+      walletAddress: d.walletAddress as string,
+      ensFullName: d.ensFullName as string ?? null,
+      ipfsCid: d.ipfsCid as string ?? null,
+      avatarUrl: d.avatarUrl as string ?? null,
+      bio: d.bio as string ?? null,
+      status: (d.status as "pending" | "linked" | "failed") ?? "linked",
+      ensTx1Hash: d.ensTx1Hash as string ?? null,
+      ensTx2Hash: d.ensTx2Hash as string ?? null,
+      ensTx3Hash: d.ensTx3Hash as string ?? null,
+      ensTx4Hash: d.ensTx4Hash as string ?? null,
+      tokenStatus: (d.tokenStatus as string) ?? null,
+      tokenAddress: d.tokenAddress as string ?? null,
+      tokenSymbol: d.tokenSymbol as string ?? null,
+      tokenName: d.tokenName as string ?? null,
+      tokenDeployTxHash: d.tokenDeployTxHash as string ?? null,
+      uniswapPairAddress: d.uniswapPairAddress as string ?? null,
+      uniswapLiquidityTxHash: d.uniswapLiquidityTxHash as string ?? null,
+      artTokenId: d.artTokenId as string ?? null,
+      artBaseUri: d.artBaseUri as string ?? null,
+    }).onConflictDoNothing();
+    res.json({ ok: true, name: d.name });
+  } catch (err) {
+    logger.error({ err }, "[ADMIN] import-subdomain failed");
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // Called by GitHub CI after pinning to IPFS — only updates ENS, no upload needed
 // Secrets stay in Replit; GitHub only sends the CID
 adminRouter.post("/admin/update-ens", async (req, res) => {
