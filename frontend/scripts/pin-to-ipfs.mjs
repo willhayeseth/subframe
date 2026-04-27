@@ -33,20 +33,23 @@ function walk(dir, base = dir) {
 
 // ── Pin to IPFS ───────────────────────────────────────────────────────────────
 
-// Files that are only needed for GitHub Pages, not IPFS
-const SKIP_FILES = new Set(["CNAME", "404.html"]);
+// Files only needed for GitHub Pages, not IPFS
+const SKIP_FILES = new Set(["CNAME"]);
 
 const files = walk(DIST).filter(({ rel }) => !SKIP_FILES.has(rel));
 console.log(`[IPFS] Pinning ${files.length} files to Pinata...`);
 
-// Pinata v3 Files API — supports flat directory uploads (files at root, no prefix required).
-// v2 pinFileToIPFS rejects multiple root-level files without a common folder prefix.
+// Pinata v3 Files API — supports flat directory uploads
 const form = new FormData();
 for (const { full, rel } of files) {
   const buf = fs.readFileSync(full);
   form.append("file", new Blob([buf]), rel);
 }
-// _redirects is already in public/ (/* /index.html 200) — no need to add manually.
+// Add 404.html = copy of index.html so IPFS gateways serve the SPA for unknown paths
+// (eth.limo serves 404.html when a path doesn't exist, letting React Router handle routing)
+const indexHtml = fs.readFileSync(path.join(DIST, "index.html"));
+form.append("file", new Blob([indexHtml]), "404.html");
+// _redirects (/* /index.html 200) is already in public/ as extra fallback
 form.append("name", `subframe-frontend-${Date.now()}`);
 form.append("network", "public"); // public IPFS — required for eth.limo & public gateways
 

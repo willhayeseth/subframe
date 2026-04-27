@@ -1043,11 +1043,11 @@ export default function Profile() {
   useEffect(() => {
     if (subLoading || !subdomain || isOwnProfile) return;
     if (isConnected) {
-      window.location.href = `https://subframe.network/${subdomain.name}`;
+      window.location.href = `https://subframe.eth.limo/${subdomain.name}`;
       return;
     }
     const t = setTimeout(() => {
-      if (!isOwnProfile) window.location.href = `https://subframe.network/${subdomain.name}`;
+      if (!isOwnProfile) window.location.href = `https://subframe.eth.limo/${subdomain.name}`;
     }, 1800);
     return () => clearTimeout(t);
   }, [subLoading, subdomain, isOwnProfile, isConnected]);
