@@ -280,6 +280,35 @@ adminRouter.post("/admin/import-subdomain", async (req, res) => {
   }
 });
 
+// Bulk update avatarUrl + ipfsCid for multiple subdomains by name
+adminRouter.post("/admin/sync-media", async (req, res) => {
+  if (!checkAuth(req, res)) return;
+  const items = req.body as { name: string; avatarUrl?: string | null; ipfsCid?: string | null }[];
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "body must be non-empty array of {name, avatarUrl?, ipfsCid?}" });
+    return;
+  }
+  const results: { name: string; updated: boolean }[] = [];
+  for (const item of items) {
+    if (!item.name) continue;
+    try {
+      await db.execute(drizzleSql`
+        UPDATE subdomains
+        SET
+          avatar_url  = COALESCE(${item.avatarUrl ?? null}, avatar_url),
+          ipfs_cid    = COALESCE(${item.ipfsCid ?? null},   ipfs_cid),
+          updated_at  = NOW()
+        WHERE name = ${item.name}
+      `);
+      results.push({ name: item.name, updated: true });
+    } catch (err) {
+      logger.error({ err, name: item.name }, "[ADMIN] sync-media failed for item");
+      results.push({ name: item.name, updated: false });
+    }
+  }
+  res.json({ ok: true, results });
+});
+
 // Called by GitHub CI after pinning to IPFS — only updates ENS, no upload needed
 // Secrets stay in Replit; GitHub only sends the CID
 adminRouter.post("/admin/update-ens", async (req, res) => {
