@@ -177,7 +177,7 @@ jobs:
         env:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          API_URL: https://subframe.network
+          API_URL: https://subframedev.replit.app
 
   build-backend:
     name: Build Backend
